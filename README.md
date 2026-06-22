@@ -5,6 +5,6 @@ Building a comprehensive library of core ML algorithms from mathematical primiti
 (PCA, K-Means, DBSCAN), and neural networks (MLP with backpropagation) — no high-level ML
 frameworks used.
 
-| Model | Link |
-|-------|------|
-| Linear Regression | [Link](https://github.com/Sam50x/Linear-Regression-from-Scratch)  |
+| Model |
+|-------|
+| [Linear Regression](https://github.com/Sam50x/Linear-Regression-from-Scratch)  |
