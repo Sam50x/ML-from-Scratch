@@ -53,4 +53,3 @@ class Linear_Regression:
         grad_w = (2/m * (X.T @ (y_pred - y_true)))
 
         return grad_b, grad_w
-    
