@@ -39,26 +39,12 @@ class Linear_Regression:
         for epoch in range(epochs):
             y_pred = X @ w.T + b
 
-            if epoch % 100 == 0:
-                mse = self.__calculate_mse(y, y_pred)
-                print(f'MSE at epoch {epoch} = {mse}')
-
             grad_b, grad_w = self.__calculate_gradients(X, y, y_pred)
             b = b - learning_rate * grad_b
             w = w - learning_rate * grad_w
 
-        mse = self.__calculate_mse(y, y_pred)
-        print(f'MSE at epoch {epochs} = {mse}')
-
         self._intercept = b
         self._weights = w
-
-    def __calculate_mse(self, y_true, y_pred):
-        m = y_true.shape[0]
-
-        mse = 1/m * np.sum((y_pred - y_true) ** 2)
-
-        return mse
 
     def __calculate_gradients(self, X, y_true, y_pred):
         m = y_true.shape[0]
@@ -67,3 +53,24 @@ class Linear_Regression:
         grad_w = (2/m * (X.T @ (y_pred - y_true)))
 
         return grad_b, grad_w
+
+
+class Polynomial_Regression(Linear_Regression):
+    def _generate_polynomial_features(self, X):
+        X_poly = X.copy()
+
+        for i in range(X.shape[1]):
+            for j in range(i, X.shape[1]):
+                X_poly = np.c_[X_poly, X[:,i] * X[:,j]]
+
+        return X_poly
+
+    def fit(self, X, y, epochs=1000, learning_rate=0.01):
+        X_poly = self._generate_polynomial_features(X)
+
+        return super().fit(X_poly, y, epochs, learning_rate)
+
+    def predict(self, X):
+        X_poly = self._generate_polynomial_features(X)
+
+        return super().predict(X_poly)
