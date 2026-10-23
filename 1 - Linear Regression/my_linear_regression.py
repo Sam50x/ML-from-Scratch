@@ -53,24 +53,4 @@ class Linear_Regression:
         grad_w = (2/m * (X.T @ (y_pred - y_true)))
 
         return grad_b, grad_w
-
-
-class Polynomial_Regression(Linear_Regression):
-    def _generate_polynomial_features(self, X):
-        X_poly = X.copy()
-
-        for i in range(X.shape[1]):
-            for j in range(i, X.shape[1]):
-                X_poly = np.c_[X_poly, X[:,i] * X[:,j]]
-
-        return X_poly
-
-    def fit(self, X, y, epochs=1000, learning_rate=0.01):
-        X_poly = self._generate_polynomial_features(X)
-
-        return super().fit(X_poly, y, epochs, learning_rate)
-
-    def predict(self, X):
-        X_poly = self._generate_polynomial_features(X)
-
-        return super().predict(X_poly)
+    
