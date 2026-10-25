@@ -10,8 +10,8 @@ class Linear_Regression:
         self.is_fitted = False
 
         self.mode = mode
-        self._weights = None
-        self._intercept = None
+        self.weights_ = None
+        self.intercept_ = None
 
     def fit(self, X, y, epochs=1000, learning_rate=0.01):
         if self.mode == 'normal_equation':
@@ -26,7 +26,7 @@ class Linear_Regression:
         if not self.is_fitted:
             raise ValueError('Model is not fitted')
 
-        y_pred = X @ self._weights.T + self._intercept
+        y_pred = X @ self.weights_.T + self.intercept_
 
         return y_pred
 
@@ -35,8 +35,8 @@ class Linear_Regression:
         
         best_theta = np.linalg.inv(X_b.T @ X_b) @ X_b.T @ y
         
-        self._intercept = best_theta[0]
-        self._weights = best_theta[1:]
+        self.intercept_ = best_theta[0]
+        self.weights_ = best_theta[1:]
 
     def __fit_using_gradient_descent(self, X, y, epochs, learning_rate):
         n = X.shape[1]
@@ -51,8 +51,8 @@ class Linear_Regression:
             b = b - learning_rate * grad_b
             w = w - learning_rate * grad_w
 
-        self._intercept = b
-        self._weights = w
+        self.intercept_ = b
+        self.weights_ = w
 
     def __calculate_gradients(self, X, y_true, y_pred):
         m = y_true.shape[0]
