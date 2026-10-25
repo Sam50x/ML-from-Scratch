@@ -7,6 +7,8 @@ class Linear_Regression:
         if mode != 'normal_equation' and mode != 'gradient_descent':
             raise ValueError('Linear Regression mode can either be \'normal_equation\' or \'gradient_descent\'')
 
+        self.is_fitted = False
+
         self.mode = mode
         self._weights = None
         self._intercept = None
@@ -17,7 +19,13 @@ class Linear_Regression:
         elif self.mode == 'gradient_descent':
             self.__fit_using_gradient_descent(X, y, epochs, learning_rate)
 
+        self.is_fitted = True
+
+
     def predict(self, X):
+        if not self.is_fitted:
+            raise ValueError('Model is not fitted')
+
         y_pred = X @ self._weights.T + self._intercept
 
         return y_pred
@@ -36,7 +44,7 @@ class Linear_Regression:
         b = np.random.random()
         w = np.random.random(n)
 
-        for epoch in range(epochs):
+        for _ in range(epochs):
             y_pred = X @ w.T + b
 
             grad_b, grad_w = self.__calculate_gradients(X, y, y_pred)
