@@ -4,8 +4,8 @@ class Logistic_Regression():
     def __init__(self):
         self.is_fitted = False
         
-        self._bias = None
-        self._weights = None
+        self.bias_ = None
+        self.weights_ = None
 
     def fit(self, X, y, epochs=1000, learning_rate=0.1):
         p = X.shape[1]
@@ -23,15 +23,15 @@ class Logistic_Regression():
             b = b - learning_rate * grad_b
             w = w - learning_rate * grad_w
 
-        self._bias = b
-        self._weights = w
+        self.bias_ = b
+        self.weights_ = w
         self.is_fitted = True
 
     def predict_proba(self, X):
         if not self.is_fitted:
             raise ValueError('Model is not fitted')
 
-        linear = X @ self._weights.T + self._bias
+        linear = X @ self.weights_.T + self.bias_
         proba = 1 / (1 + np.exp(-linear))
 
         return proba
