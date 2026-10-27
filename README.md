@@ -10,7 +10,7 @@ The goal of this repo is to understand how each algorithm works under the hood: 
 |---|-------|--------|------|
 | 1 | [Linear Regression](./1%20-%20Linear%20Regression) | Done | Synthetic data, [House Prices](https://www.kaggle.com/competitions/house-prices-advanced-regression-techniques/) |
 | 2 | [Logistic Regression](./2%20-%20Logistic%20Regression) | Done | Synthetic data, [Titanic](https://www.kaggle.com/competitions/titanic) |
-| 3 | K-Nearest Neighbors (KNN) | Planned | |
+| 3 | [K-Nearest Neighbors (KNN)](./3%20-%20KNN) | Done | Synthetic data, [Iris](https://www.kaggle.com/competitions/iris-classification-challenge) |
 | 4 | Naive Bayes | Planned | |
 | 5 | Support Vector Machine (SVM) | Planned | |
 | 6 | Decision Tree | Planned | |
@@ -121,6 +121,50 @@ y_pred = model.predict(X_val, threshold=0.5)
 
 My model matches scikit-learn on both the validation set and the Kaggle leaderboard.
 
+## 3 - K-Nearest Neighbors (KNN)
+
+**Implementation:** [`my_knn.py`](./3%20-%20KNN/my_knn.py)
+**Walkthrough:** [`notebook.ipynb`](./3%20-%20KNN/notebook.ipynb)
+
+### How it works
+
+KNN is a lazy learner: `fit` just stores the training data, and all the work happens in `predict`. For each sample to classify, the model:
+
+1. Computes the Euclidean distance from the sample to every training point.
+2. Takes the `k` closest points.
+3. Returns the most common class among them (a majority vote).
+
+If two classes tie in the vote, the one that comes first in sorted order wins. `predict` raises a `ValueError` if the model has not been fitted. Because KNN is distance-based, features should be scaled first.
+
+### Usage
+
+```python
+from my_knn import KNN
+
+model = KNN(n_neighbors=5)
+model.fit(X_train, y_train)
+y_pred = model.predict(X_val)
+```
+
+### Experiments
+
+**1. Synthetic data** (100 samples, 5 features, an 80/20 train/test split, `k=3`). The labels are random, so there is no pattern to learn, and the accuracy of **0.30** is about what chance (1 in 3) would give. This is a sanity check that the model runs, not a performance test.
+
+**2. Iris (Kaggle).** Classifying iris flowers into three species from sepal and petal measurements, using the [Iris Classification Challenge](https://www.kaggle.com/competitions/iris-classification-challenge) (105 training samples, 45 test samples). The notebook walks through:
+
+- **EDA:** dataset info, summary statistics, and scatter plots of sepal and petal dimensions by species.
+- **Preprocessing:** a stratified 80/20 train/validation split, then standardization with a `StandardScaler` fitted on the training set.
+- **Training and evaluation:** my model with `k` = 3, 5, and 10, compared against scikit-learn's `KNeighborsClassifier`. For the Kaggle submissions, the `k=10` models are retrained on the full training set.
+
+| Model | Validation accuracy | Kaggle score |
+|-------|---------------------|--------------|
+| Mine (k = 3) | 0.9524 | |
+| Mine (k = 5) | 1.0000 | |
+| Mine (k = 10) | 1.0000 | 0.94444 |
+| scikit-learn `KNeighborsClassifier` (k = 10) | 1.0000 | 0.94444 |
+
+My model matches scikit-learn on both the validation set and the leaderboard. The validation set has only 21 samples, so each mistake costs about 4.8 percentage points, and `k=5` and `k=10` cannot be told apart.
+
 ## Repo structure
 
 ```
@@ -131,11 +175,15 @@ ML-from-Scratch/
 ├── 2 - Logistic Regression/
 │   ├── my_logistic_regression.py # the model
 │   └── notebook.ipynb            # experiments
+├── 3 - KNN/
+│   ├── my_knn.py                 # the model
+│   └── notebook.ipynb            # experiments
 └── data/
     ├── house_prices/             # Kaggle data and submission files
-    └── titanic/                  # Kaggle data and submission files
+    ├── titanic/                  # Kaggle data and submission files
+    └── iris/                     # Kaggle data and submission files
 ```
 
 ## Requirements
 
-`numpy`, `pandas`, `scikit-learn` (preprocessing and metrics only), `seaborn`, `matplotlib`
+`numpy` (2.1 or newer), `pandas`, `scikit-learn` (preprocessing and metrics only), `seaborn`, `matplotlib`

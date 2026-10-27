@@ -23,13 +23,13 @@ id,species
 21,setosa
 22,versicolor
 23,virginica
-24,virginica
+24,versicolor
 25,versicolor
 26,versicolor
 27,versicolor
 28,versicolor
 29,setosa
-30,versicolor
+30,virginica
 31,virginica
 32,versicolor
 33,setosa
