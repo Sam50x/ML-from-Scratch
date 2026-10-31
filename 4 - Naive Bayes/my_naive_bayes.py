@@ -25,7 +25,7 @@ class Naive_Bayes:
         y_pred = []
 
         for x in X.T:
-            row = X.iloc[x]
+            row = X.loc[x]
             row_words = row[row > 0]
 
             class_proba = self.proba_labels.copy()
