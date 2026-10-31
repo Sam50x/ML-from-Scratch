@@ -11,7 +11,7 @@ The goal of this repo is to understand how each algorithm works under the hood: 
 | 1 | [Linear Regression](./1%20-%20Linear%20Regression) | Done | Synthetic data, [House Prices](https://www.kaggle.com/competitions/house-prices-advanced-regression-techniques/) |
 | 2 | [Logistic Regression](./2%20-%20Logistic%20Regression) | Done | Synthetic data, [Titanic](https://www.kaggle.com/competitions/titanic) |
 | 3 | [K-Nearest Neighbors (KNN)](./3%20-%20KNN) | Done | Synthetic data, [Iris](https://www.kaggle.com/competitions/iris-classification-challenge) |
-| 4 | Naive Bayes | Planned | |
+| 4 | [Naive Bayes](./4%20-%20Naive%20Bayes) | Done | Synthetic data, [Disaster Tweets](https://www.kaggle.com/competitions/nlp-getting-started) |
 | 5 | Support Vector Machine (SVM) | Planned | |
 | 6 | Decision Tree | Planned | |
 | 7 | Random Forest | Planned | |
@@ -165,6 +165,57 @@ y_pred = model.predict(X_val)
 
 My model matches scikit-learn on both the validation set and the leaderboard. The validation set has only 21 samples, so each mistake costs about 4.8 percentage points, and `k=5` and `k=10` cannot be told apart.
 
+## 4 - Naive Bayes
+
+**Implementation:** [`my_naive_bayes.py`](./4%20-%20Naive%20Bayes/my_naive_bayes.py)
+**Walkthrough:** [`notebook.ipynb`](./4%20-%20Naive%20Bayes/notebook.ipynb)
+
+### How it works
+
+`Naive_Bayes` is a multinomial Naive Bayes classifier for word-count features, such as the output of a bag-of-words vectorizer. It applies Bayes' rule with the "naive" assumption that words are independent given the class:
+
+`P(class | document) ∝ P(class) × Π P(word | class)^count`
+
+- **Training:** the class priors `P(class)` come from how often each label appears. `P(word | class)` is the number of times the word appears in documents of that class, with Laplace smoothing (`alpha`, default `1`) added to every word count so that a word never seen in a class does not zero out the whole product.
+- **Prediction:** for each document, the class prior is multiplied by `P(word | class)` raised to the word's count, for each word that appears in the document. The class with the highest score wins.
+
+`predict` raises a `ValueError` if the model has not been fitted. Both `fit` and `predict` expect a **pandas DataFrame** of word counts (one row per document, one column per word), and the columns must be the same at training and prediction time.
+
+### Usage
+
+```python
+from sklearn.feature_extraction.text import CountVectorizer
+import pandas as pd
+from my_naive_bayes import Naive_Bayes
+
+vectorizer = CountVectorizer()
+X_train = vectorizer.fit_transform(train_texts)
+X_train = pd.DataFrame(X_train.toarray(), columns=vectorizer.get_feature_names_out())
+
+model = Naive_Bayes()
+model.fit(X_train, y_train, alpha=1)
+
+X_val = pd.DataFrame(vectorizer.transform(val_texts).toarray(), columns=vectorizer.get_feature_names_out())
+y_pred = model.predict(X_val)
+```
+
+### Experiments
+
+**1. Synthetic data** (a tiny spam-vs-normal-message dataset: 4 training texts and 4 validation texts, turned into word counts with `CountVectorizer`). The model gets an F1 score of **1.0**, which confirms that the pipeline runs end to end.
+
+**2. Disaster Tweets (Kaggle).** Predicting whether a tweet is about a real disaster, using [NLP with Disaster Tweets](https://www.kaggle.com/competitions/nlp-getting-started) (7,613 labelled training tweets). The notebook walks through:
+
+- **Cleaning:** the `keyword` and `location` columns are dropped. Tweet text is lowercased, and everything except letters and spaces is removed.
+- **Preprocessing:** a stratified 80/20 train/validation split (6,090 / 1,523 tweets), then a `CountVectorizer` fitted on the training text.
+- **Training and evaluation:** my model compared against scikit-learn's `MultinomialNB`. For the Kaggle submissions, both models are retrained on all the labelled tweets.
+
+| Model | Validation F1 | Kaggle score (F1) |
+|-------|---------------|-------------------|
+| Mine | 0.7738 | 0.79742 |
+| scikit-learn `MultinomialNB` | 0.7738 | 0.79742 |
+
+My model matches scikit-learn exactly on both the validation set and the leaderboard.
+
 ## Repo structure
 
 ```
@@ -178,10 +229,14 @@ ML-from-Scratch/
 ├── 3 - KNN/
 │   ├── my_knn.py                 # the model
 │   └── notebook.ipynb            # experiments
+├── 4 - Naive Bayes/
+│   ├── my_naive_bayes.py         # the model
+│   └── notebook.ipynb            # experiments
 └── data/
     ├── house_prices/             # Kaggle data and submission files
     ├── titanic/                  # Kaggle data and submission files
-    └── iris/                     # Kaggle data and submission files
+    ├── iris/                     # Kaggle data and submission files
+    └── disaster_tweets/          # Kaggle data and submission files
 ```
 
 ## Requirements
