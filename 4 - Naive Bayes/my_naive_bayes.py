@@ -1,6 +1,3 @@
-import numpy as np
-import pandas as pd
-
 class Naive_Bayes:
     def __init__(self):
         self.is_fitted = False
@@ -21,8 +18,20 @@ class Naive_Bayes:
 
         self.is_fitted = True
 
-    def predict(self, texts):
+    def predict(self, X):
         if not self.is_fitted:
             raise ValueError('Model is not fitted')
 
-        
+        y_pred = []
+
+        for x in X.T:
+            row = X.iloc[x]
+            row_words = row[row > 0]
+
+            class_proba = self.proba_labels.copy()
+            for word, count in row_words.items():
+                class_proba *= ((self.proba_words[word]) ** count)
+
+            y_pred.append(class_proba.idxmax())
+
+        return y_pred
