@@ -55,4 +55,4 @@ class SVM:
                 grad_b += sign
                 grad_w += - sign * x
 
-        return grad_b, grad_w
+        return grad_b / n_instances, grad_w / n_instances
