@@ -53,8 +53,7 @@ class SVM:
             objective,
             np.zeros(n_instances),
             constraints=constraints,
-            bounds=[(0, C)],
-            method='SLSQP'
+            bounds=[(0, C)]
         )
 
         alpha = result.x
