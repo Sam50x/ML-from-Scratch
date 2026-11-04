@@ -12,7 +12,7 @@ The goal of this repo is to understand how each algorithm works under the hood: 
 | 2 | [Logistic Regression](./2%20-%20Logistic%20Regression) | Done | Synthetic data, [Titanic](https://www.kaggle.com/competitions/titanic) |
 | 3 | [K-Nearest Neighbors (KNN)](./3%20-%20KNN) | Done | Synthetic data, [Iris](https://www.kaggle.com/competitions/iris-classification-challenge) |
 | 4 | [Naive Bayes](./4%20-%20Naive%20Bayes) | Done | Synthetic data, [Disaster Tweets](https://www.kaggle.com/competitions/nlp-getting-started) |
-| 5 | Support Vector Machine (SVM) | Planned | |
+| 5 | [Support Vector Machine (SVM)](./5%20-%20SVM) | Done | Synthetic data, [Titanic](https://www.kaggle.com/competitions/titanic) |
 | 6 | Decision Tree | Planned | |
 | 7 | Random Forest | Planned | |
 | 8 | Boosting Trees | Planned | |
@@ -216,6 +216,57 @@ y_pred = model.predict(X_val)
 
 My model matches scikit-learn exactly on both the validation set and the leaderboard.
 
+## 5 - Support Vector Machine (SVM)
+
+**Implementation:** [`my_svm.py`](./5%20-%20SVM/my_svm.py)
+**Walkthrough:** [`notebook.ipynb`](./5%20-%20SVM/notebook.ipynb)
+
+### How it works
+
+The `SVM` class is a linear, soft-margin binary classifier. Labels are converted from 0/1 to −1/+1 internally, and the `mode` argument chooses how the model is trained:
+
+- **`dual_problem`** (default): solves the dual form of the SVM. It minimizes `½ ΣΣ αᵢαⱼ yᵢyⱼ (xᵢ·xⱼ) − Σ αᵢ` subject to `Σ αᵢyᵢ = 0` and `0 ≤ αᵢ ≤ C`, using SciPy's `minimize` with the constraint and bounds. The weights come from `w = Σ αᵢ yᵢ xᵢ`, and the bias is the average of `yₖ − w·xₖ` over the free support vectors (those with `0 < α < C`). The parameter `C` controls how strongly margin violations are penalized.
+- **`gradient_descent`**: minimizes the regularized hinge loss, `λ‖w‖² + mean(max(0, 1 − y(w·x + b)))`, with subgradient descent. Defaults: `epochs=1000`, `learning_rate=0.01`, `regularization_rate=0.01`.
+
+`predict` returns 1 when `w·x + b > 0` and 0 otherwise, and raises a `ValueError` if the model has not been fitted. After fitting, the parameters are available as `weights_` and `bias_`.
+
+### Usage
+
+```python
+from my_svm import SVM
+
+# Dual problem
+model = SVM(mode='dual_problem')
+model.fit(X_train, y_train, C=1.0)
+y_pred = model.predict(X_val)
+
+# Gradient descent
+model = SVM(mode='gradient_descent')
+model.fit(X_train, y_train, epochs=1000, learning_rate=0.01, regularization_rate=0.01)
+y_pred = model.predict(X_val)
+```
+
+### Experiments
+
+**1. Synthetic data** (100 samples, 5 features, labels generated from random weights plus noise through a sigmoid). Accuracy on the training data:
+
+| Method | Accuracy |
+|--------|----------|
+| Dual problem | 0.92 |
+| Gradient descent | 0.90 |
+
+**2. Titanic (Kaggle).** The same task and preprocessing as in the logistic regression notebook (family features, imputation, scaling, and encoding), with a stratified 70/30 train/validation split (623 / 268 passengers). I compare my two modes against scikit-learn's `SVC(kernel='linear')`. For the Kaggle submissions, all models are retrained on the full training set.
+
+| Model | Validation accuracy | Kaggle score |
+|-------|---------------------|--------------|
+| Mine (Dual Problem) | 0.7761 | 0.77511 |
+| Mine (Gradient Descent) | 0.7276 | 0.79186 |
+| scikit-learn `SVC` (linear) | 0.7761 | 0.77511 |
+
+The dual problem version matches scikit-learn exactly: the same validation accuracy, the same Kaggle score, and identical predictions on all 418 test passengers. Gradient descent only approximates the solution (a constant learning rate and a fixed number of epochs), so its predictions differ from scikit-learn's for about 9% of the test passengers. Its Kaggle score is higher but its validation accuracy is lower, and both gaps are only a handful of passengers, so I would not read it as the better model.
+
+The dual problem is solved with a general-purpose optimizer, so training time grows quickly with the number of samples.
+
 ## Repo structure
 
 ```
@@ -232,6 +283,9 @@ ML-from-Scratch/
 ├── 4 - Naive Bayes/
 │   ├── my_naive_bayes.py         # the model
 │   └── notebook.ipynb            # experiments
+├── 5 - SVM/
+│   ├── my_svm.py                 # the model
+│   └── notebook.ipynb            # experiments
 └── data/
     ├── house_prices/             # Kaggle data and submission files
     ├── titanic/                  # Kaggle data and submission files
@@ -241,4 +295,4 @@ ML-from-Scratch/
 
 ## Requirements
 
-`numpy` (2.1 or newer), `pandas`, `scikit-learn` (preprocessing and metrics only), `seaborn`, `matplotlib`
+`numpy` (2.1 or newer), `pandas`, `scipy`, `scikit-learn` (preprocessing and metrics only), `seaborn`, `matplotlib`
