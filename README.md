@@ -8,29 +8,31 @@ The goal of this repo is to understand how each algorithm works under the hood: 
 
 | # | Model | Status | Data |
 |---|-------|--------|------|
-| 1 | [Linear Regression](./1%20-%20Linear%20Regression) | Done | Synthetic data, [House Prices](https://www.kaggle.com/competitions/house-prices-advanced-regression-techniques/) |
-| 2 | [Logistic Regression](./2%20-%20Logistic%20Regression) | Done | Synthetic data, [Titanic](https://www.kaggle.com/competitions/titanic) |
-| 3 | [K-Nearest Neighbors (KNN)](./3%20-%20KNN) | Done | Synthetic data, [Iris](https://www.kaggle.com/competitions/iris-classification-challenge) |
-| 4 | [Naive Bayes](./4%20-%20Naive%20Bayes) | Done | Synthetic data, [Disaster Tweets](https://www.kaggle.com/competitions/nlp-getting-started) |
-| 5 | [Support Vector Machine (SVM)](./5%20-%20SVM) | Done | Synthetic data, [Titanic](https://www.kaggle.com/competitions/titanic) |
-| 6 | Decision Tree | Planned | |
-| 7 | Random Forest | Planned | |
-| 8 | Boosting Trees | Planned | |
-| 9 | Principal Component Analysis (PCA) | Planned | |
+| 01 | [Linear Regression](./01%20-%20Linear%20Regression) | Done | Synthetic data, [House Prices](https://www.kaggle.com/competitions/house-prices-advanced-regression-techniques/) |
+| 02 | [Logistic Regression](./02%20-%20Logistic%20Regression) | Done | Synthetic data, [Titanic](https://www.kaggle.com/competitions/titanic) |
+| 03 | [K-Nearest Neighbors (KNN)](./03%20-%20KNN) | Done | Synthetic data, [Iris](https://www.kaggle.com/competitions/iris-classification-challenge) |
+| 04 | [Naive Bayes](./04%20-%20Naive%20Bayes) | Done | Synthetic data, [Disaster Tweets](https://www.kaggle.com/competitions/nlp-getting-started) |
+| 05 | [Support Vector Machine (SVM)](./05%20-%20SVM) | Done | Synthetic data, [Titanic](https://www.kaggle.com/competitions/titanic) |
+| 06 | Decision Tree | Planned | |
+| 07 | Random Forest | Planned | |
+| 08 | Boosting Trees | Planned | |
+| 09 | Principal Component Analysis (PCA) | Planned | |
 | 10 | K-Means | Planned | |
 | 11 | DBSCAN | Planned | |
 | 12 | Gaussian Mixture Model (GMM) | Planned | |
+| 13 | Stacking | Planned | |
+| 14 | Projects | Planned | |
 
-## 1 - Linear Regression
+## 01 - Linear Regression
 
-**Implementation:** [`my_linear_regression.py`](./1%20-%20Linear%20Regression/my_linear_regression.py)
-**Walkthrough:** [`notebook.ipynb`](./1%20-%20Linear%20Regression/notebook.ipynb)
+**Implementation:** [`my_linear_regression.py`](./01%20-%20Linear%20Regression/my_linear_regression.py)
+**Walkthrough:** [`notebook.ipynb`](./01%20-%20Linear%20Regression/notebook.ipynb)
 
 ### How it works
 
-The `Linear_Regression` class supports two ways of fitting the model, chosen with the `mode` argument:
+The `Linear_Regression` class fits a linear model by minimizing the mean squared error, `L = (1/m) Σ (ŷ − y)²`, with no regularization. It supports two ways of doing so, chosen with the `mode` argument:
 
-- **`normal_equation`** (default): solves for the weights in closed form, `θ = (XᵀX)⁻¹ Xᵀy`, after adding a column of ones for the intercept.
+- **`normal_equation`** (default): solves for the weights in closed form, `θ = (XᵀX)⁻¹ Xᵀy`, after adding a column of ones for the intercept. This requires `XᵀX` to be invertible.
 - **`gradient_descent`**: starts from random weights and minimizes the MSE loss iteratively, using the gradients `∂L/∂w = (2/m) Xᵀ(ŷ − y)` and `∂L/∂b = (2/m) Σ(ŷ − y)`. Defaults: `epochs=1000`, `learning_rate=0.01`.
 
 After fitting, the learned parameters are available as `weights_` and `intercept_`. Calling `predict` before `fit` raises a `ValueError`.
@@ -77,14 +79,14 @@ Validation RMSE is measured in dollars on the clipped `SalePrice` values. The Ka
 
 My normal equation implementation matches scikit-learn's results (the validation RMSEs differ by less than 0.000000001), which confirms that it is correct. Gradient descent scores slightly better on both the validation set and Kaggle, likely because it never fits the training data as tightly as the closed-form solution does.
 
-## 2 - Logistic Regression
+## 02 - Logistic Regression
 
-**Implementation:** [`my_logistic_regression.py`](./2%20-%20Logistic%20Regression/my_logistic_regression.py)
-**Walkthrough:** [`notebook.ipynb`](./2%20-%20Logistic%20Regression/notebook.ipynb)
+**Implementation:** [`my_logistic_regression.py`](./02%20-%20Logistic%20Regression/my_logistic_regression.py)
+**Walkthrough:** [`notebook.ipynb`](./02%20-%20Logistic%20Regression/notebook.ipynb)
 
 ### How it works
 
-The `Logistic_Regression` class is a binary classifier trained with gradient descent on the log loss (binary cross-entropy):
+The `Logistic_Regression` class is a binary classifier trained with gradient descent on the log loss (binary cross-entropy), `L = −(1/m) Σ [y·log(p) + (1 − y)·log(1 − p)]`, with no regularization:
 
 - **Model:** a linear combination of the features is passed through the sigmoid function, `p = 1 / (1 + e^(−(Xw + b)))`, which gives the probability of class 1.
 - **Training:** weights and bias start from random normal values and are updated for a fixed number of epochs using the gradients `∂L/∂w = (1/m) Xᵀ(p − y)` and `∂L/∂b = (1/m) Σ(p − y)`. Defaults: `epochs=1000`, `learning_rate=0.1`.
@@ -119,22 +121,24 @@ y_pred = model.predict(X_val, threshold=0.5)
 | Mine | 0.8022 | 0.76315 |
 | scikit-learn `LogisticRegression` | 0.8022 | 0.76315 |
 
-My model matches scikit-learn on both the validation set and the Kaggle leaderboard.
+My model matches scikit-learn on both the validation set and the Kaggle leaderboard. Note that scikit-learn's `LogisticRegression` applies L2 regularization by default and mine does not, so the two models are not mathematically identical, although they score the same here.
 
-## 3 - K-Nearest Neighbors (KNN)
+## 03 - K-Nearest Neighbors (KNN)
 
-**Implementation:** [`my_knn.py`](./3%20-%20KNN/my_knn.py)
-**Walkthrough:** [`notebook.ipynb`](./3%20-%20KNN/notebook.ipynb)
+**Implementation:** [`my_knn.py`](./03%20-%20KNN/my_knn.py)
+**Walkthrough:** [`notebook.ipynb`](./03%20-%20KNN/notebook.ipynb)
 
 ### How it works
 
 KNN is a lazy learner: `fit` just stores the training data, and all the work happens in `predict`. For each sample to classify, the model:
 
-1. Computes the Euclidean distance from the sample to every training point.
+1. Computes the Euclidean distance, `√Σ(aᵢ − bᵢ)²`, from the sample to every training point.
 2. Takes the `k` closest points.
 3. Returns the most common class among them (a majority vote).
 
 If two classes tie in the vote, the one that comes first in sorted order wins. `predict` raises a `ValueError` if the model has not been fitted. Because KNN is distance-based, features should be scaled first.
+
+KNN has no loss function and nothing to optimize. The only hyperparameter is `n_neighbors`, and every prediction compares the sample against all the stored training points, so prediction gets slower as the training set grows.
 
 ### Usage
 
@@ -165,10 +169,10 @@ y_pred = model.predict(X_val)
 
 My model matches scikit-learn on both the validation set and the leaderboard. The validation set has only 21 samples, so each mistake costs about 4.8 percentage points, and `k=5` and `k=10` cannot be told apart.
 
-## 4 - Naive Bayes
+## 04 - Naive Bayes
 
-**Implementation:** [`my_naive_bayes.py`](./4%20-%20Naive%20Bayes/my_naive_bayes.py)
-**Walkthrough:** [`notebook.ipynb`](./4%20-%20Naive%20Bayes/notebook.ipynb)
+**Implementation:** [`my_naive_bayes.py`](./04%20-%20Naive%20Bayes/my_naive_bayes.py)
+**Walkthrough:** [`notebook.ipynb`](./04%20-%20Naive%20Bayes/notebook.ipynb)
 
 ### How it works
 
@@ -178,6 +182,8 @@ My model matches scikit-learn on both the validation set and the leaderboard. Th
 
 - **Training:** the class priors `P(class)` come from how often each label appears. `P(word | class)` is the number of times the word appears in documents of that class, with Laplace smoothing (`alpha`, default `1`) added to every word count so that a word never seen in a class does not zero out the whole product.
 - **Prediction:** for each document, the class prior is multiplied by `P(word | class)` raised to the word's count, for each word that appears in the document. The class with the highest score wins.
+
+There is no loss function to minimize: the probabilities are estimated directly by counting words, and `alpha` is the only hyperparameter.
 
 `predict` raises a `ValueError` if the model has not been fitted. Both `fit` and `predict` expect a **pandas DataFrame** of word counts (one row per document, one column per word), and the columns must be the same at training and prediction time.
 
@@ -216,17 +222,19 @@ y_pred = model.predict(X_val)
 
 My model matches scikit-learn exactly on both the validation set and the leaderboard.
 
-## 5 - Support Vector Machine (SVM)
+## 05 - Support Vector Machine (SVM)
 
-**Implementation:** [`my_svm.py`](./5%20-%20SVM/my_svm.py)
-**Walkthrough:** [`notebook.ipynb`](./5%20-%20SVM/notebook.ipynb)
+**Implementation:** [`my_svm.py`](./05%20-%20SVM/my_svm.py)
+**Walkthrough:** [`notebook.ipynb`](./05%20-%20SVM/notebook.ipynb)
 
 ### How it works
 
-The `SVM` class is a linear, soft-margin binary classifier. Labels are converted from 0/1 to −1/+1 internally, and the `mode` argument chooses how the model is trained:
+The `SVM` class is a linear, soft-margin binary classifier trained with the **hinge loss**. For a point with label `y` (−1 or +1) and score `f(x) = w·x + b`, the hinge loss is `max(0, 1 − y·f(x))`. It is zero when the point is on the correct side and outside the margin, and it grows linearly as the point moves inside the margin or onto the wrong side.
 
-- **`dual_problem`** (default): solves the dual form of the SVM. It minimizes `½ ΣΣ αᵢαⱼ yᵢyⱼ (xᵢ·xⱼ) − Σ αᵢ` subject to `Σ αᵢyᵢ = 0` and `0 ≤ αᵢ ≤ C`, using SciPy's `minimize` with the constraint and bounds. The weights come from `w = Σ αᵢ yᵢ xᵢ`, and the bias is the average of `yₖ − w·xₖ` over the free support vectors (those with `0 < α < C`). The parameter `C` controls how strongly margin violations are penalized.
-- **`gradient_descent`**: minimizes the regularized hinge loss, `λ‖w‖² + mean(max(0, 1 − y(w·x + b)))`, with subgradient descent. Defaults: `epochs=1000`, `learning_rate=0.01`, `regularization_rate=0.01`.
+Both modes solve the same soft-margin problem, `minimize ½‖w‖² + C Σ max(0, 1 − yᵢ(w·xᵢ + b))`. Labels are converted from 0/1 to −1/+1 internally, and the `mode` argument chooses how the problem is solved:
+
+- **`dual_problem`** (default): solves the dual form of the problem above. It minimizes `½ ΣΣ αᵢαⱼ yᵢyⱼ (xᵢ·xⱼ) − Σ αᵢ` subject to `Σ αᵢyᵢ = 0` and `0 ≤ αᵢ ≤ C`, using SciPy's `minimize` with the constraint and bounds. The weights come from `w = Σ αᵢ yᵢ xᵢ`, and the bias is the average of `yₖ − w·xₖ` over the free support vectors (those with `0 < α < C`). The parameter `C` controls how strongly hinge-loss violations are penalized.
+- **`gradient_descent`**: minimizes the regularized hinge loss directly, `λ‖w‖² + (1/n) Σ max(0, 1 − yᵢ(w·xᵢ + b))`, with subgradient descent. Only points that violate the margin (`y·f(x) < 1`) contribute to the gradient. Defaults: `epochs=1000`, `learning_rate=0.01`, `regularization_rate=0.01`. The regularization rate `λ` and `C` describe the same trade-off, with `C = 1 / (2·λ·n)` for `n` training samples.
 
 `predict` returns 1 when `w·x + b > 0` and 0 otherwise, and raises a `ValueError` if the model has not been fitted. After fitting, the parameters are available as `weights_` and `bias_`.
 
@@ -263,7 +271,7 @@ y_pred = model.predict(X_val)
 | Mine (Gradient Descent) | 0.7276 | 0.79186 |
 | scikit-learn `SVC` (linear) | 0.7761 | 0.77511 |
 
-The dual problem version matches scikit-learn exactly: the same validation accuracy, the same Kaggle score, and identical predictions on all 418 test passengers. Gradient descent only approximates the solution (a constant learning rate and a fixed number of epochs), so its predictions differ from scikit-learn's for about 9% of the test passengers. Its Kaggle score is higher but its validation accuracy is lower, and both gaps are only a handful of passengers, so I would not read it as the better model.
+The dual problem version matches scikit-learn exactly: the same validation accuracy, the same Kaggle score, and identical predictions on all 418 test passengers. Gradient descent only approximates the solution (a constant learning rate and a fixed number of epochs), so its predictions differ from scikit-learn's for about 9% of the test passengers. Its default settings also correspond to `C ≈ 0.08` on the 623 training samples, compared with `C = 1` for the dual mode and scikit-learn. Its Kaggle score is higher but its validation accuracy is lower, and both gaps are only a handful of passengers, so I would not read it as the better model.
 
 The dual problem is solved with a general-purpose optimizer, so training time grows quickly with the number of samples.
 
@@ -271,19 +279,19 @@ The dual problem is solved with a general-purpose optimizer, so training time gr
 
 ```
 ML-from-Scratch/
-├── 1 - Linear Regression/
+├── 01 - Linear Regression/
 │   ├── my_linear_regression.py   # the model
 │   └── notebook.ipynb            # experiments
-├── 2 - Logistic Regression/
+├── 02 - Logistic Regression/
 │   ├── my_logistic_regression.py # the model
 │   └── notebook.ipynb            # experiments
-├── 3 - KNN/
+├── 03 - KNN/
 │   ├── my_knn.py                 # the model
 │   └── notebook.ipynb            # experiments
-├── 4 - Naive Bayes/
+├── 04 - Naive Bayes/
 │   ├── my_naive_bayes.py         # the model
 │   └── notebook.ipynb            # experiments
-├── 5 - SVM/
+├── 05 - SVM/
 │   ├── my_svm.py                 # the model
 │   └── notebook.ipynb            # experiments
 └── data/
