@@ -2,12 +2,12 @@ import numpy as np
 
 np.random.seed(42)
 
-class Decision_Tree:
+class Decision_Tree_Classifier:
     def __init__(self, mode='gini'):
         self.is_fitted = False
 
         if mode != 'gini' and mode != 'entropy':
-            raise ValueError('SVM mode can either be \'gini\' or \'entropy\'')
+            raise ValueError('Decision Tree mode can either be \'gini\' or \'entropy\'')
 
         self.mode = mode
 
@@ -21,3 +21,8 @@ class Decision_Tree:
             raise ValueError('Model is not fitted')
 
         
+
+
+class Node:
+    def __init__(self):
+        pass
