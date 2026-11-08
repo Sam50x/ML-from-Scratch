@@ -67,13 +67,13 @@ y_pred = model.predict(X_val)
 - **EDA:** summary statistics, missing values, columns that are mostly zeros, and a correlation heatmap.
 - **Cleaning:** outliers in the highest-variance numeric columns (including `SalePrice`) are clipped to the 10th and 90th percentiles. Columns with more than 50% missing values, more than 50% zeros, or high correlation with other features are dropped.
 - **Preprocessing:** a scikit-learn `ColumnTransformer` that imputes (median / most frequent), standardizes numeric features, and one-hot encodes categorical ones.
-- **Training and evaluation:** a 70/30 train/validation split, comparing my two solvers against scikit-learn's `LinearRegression`. For the Kaggle submissions, each model is retrained on the full training set.
+- **Training and evaluation:** a 70/30 train/validation split, comparing my two solvers against scikit-learn's `LinearRegression`. For the Kaggle submissions, the preprocessing pipeline is refitted on the full training set and each model is retrained on it.
 
-| Model | Validation RMSE | Kaggle score |
+| Model | Validation RMSE | Kaggle score (RMSE) |
 |-------|-----------------|--------------|
-| Mine (Normal Equation) | 18,884.06 | 0.16408 |
-| Mine (Gradient Descent) | 18,412.13 | 0.16216 |
-| scikit-learn `LinearRegression` | 18,884.06 | 0.16408 |
+| Mine (Normal Equation) | 18,884.06 | 0.16664 |
+| Mine (Gradient Descent) | 18,412.13 | 0.16219 |
+| scikit-learn `LinearRegression` | 18,884.06 | 0.16664 |
 
 Validation RMSE is measured in dollars on the clipped `SalePrice` values. The Kaggle score is the competition's metric (RMSE on the log of the price), so lower is better.
 
@@ -114,14 +114,14 @@ y_pred = model.predict(X_val, threshold=0.5)
 - **EDA:** missing values, summary statistics, and plots of the survival distribution, age, and fare.
 - **Feature engineering:** `FamilySize` (siblings/spouses + parents/children + 1) and an `IsAlone` flag.
 - **Preprocessing:** a scikit-learn `ColumnTransformer` that imputes and standardizes the numeric features, one-hot encodes `Embarked`, ordinally encodes `Sex`, and passes `Pclass` and `IsAlone` through. `Name`, `Ticket`, and `Cabin` are dropped.
-- **Training and evaluation:** a stratified 70/30 train/validation split, comparing my model against scikit-learn's `LogisticRegression`. For the Kaggle submissions, both models are retrained on the full training set.
+- **Training and evaluation:** a stratified 70/30 train/validation split, comparing my model against scikit-learn's `LogisticRegression`. For the Kaggle submissions, the preprocessing pipeline is refitted on the full training set and both models are retrained on it.
 
-| Model | Validation accuracy | Kaggle score |
+| Model | Validation accuracy | Kaggle score (accuracy) |
 |-------|---------------------|--------------|
 | Mine | 0.8022 | 0.76315 |
-| scikit-learn `LogisticRegression` | 0.8022 | 0.76315 |
+| scikit-learn `LogisticRegression` | 0.8022 | 0.76555 |
 
-My model matches scikit-learn on both the validation set and the Kaggle leaderboard. Note that scikit-learn's `LogisticRegression` applies L2 regularization by default and mine does not, so the two models are not mathematically identical, although they score the same here.
+My model matches scikit-learn's validation accuracy exactly. On Kaggle, scikit-learn scores 0.76555 against my 0.76315, which is a difference of one passenger out of 418. Note that scikit-learn's `LogisticRegression` applies L2 regularization by default and mine does not, so the two models are not mathematically identical, which may be why one prediction differs.
 
 ## 03 - K-Nearest Neighbors (KNN)
 
@@ -158,9 +158,9 @@ y_pred = model.predict(X_val)
 
 - **EDA:** dataset info, summary statistics, and scatter plots of sepal and petal dimensions by species.
 - **Preprocessing:** a stratified 80/20 train/validation split, then standardization with a `StandardScaler` fitted on the training set.
-- **Training and evaluation:** my model with `k` = 3, 5, and 10, compared against scikit-learn's `KNeighborsClassifier`. For the Kaggle submissions, the `k=10` models are retrained on the full training set.
+- **Training and evaluation:** my model with `k` = 3, 5, and 10, compared against scikit-learn's `KNeighborsClassifier`. For the Kaggle submissions, the scaler is refitted on the full training set and the `k=10` models are retrained on it.
 
-| Model | Validation accuracy | Kaggle score |
+| Model | Validation accuracy | Kaggle score (accuracy) |
 |-------|---------------------|--------------|
 | Mine (k = 3) | 0.9524 | |
 | Mine (k = 5) | 1.0000 | |
@@ -213,12 +213,12 @@ y_pred = model.predict(X_val)
 
 - **Cleaning:** the `keyword` and `location` columns are dropped. Tweet text is lowercased, and everything except letters and spaces is removed.
 - **Preprocessing:** a stratified 80/20 train/validation split (6,090 / 1,523 tweets), then a `CountVectorizer` fitted on the training text.
-- **Training and evaluation:** my model compared against scikit-learn's `MultinomialNB`. For the Kaggle submissions, both models are retrained on all the labelled tweets.
+- **Training and evaluation:** my model compared against scikit-learn's `MultinomialNB`. For the Kaggle submissions, the vectorizer is refitted on all the labelled tweets and both models are retrained on them.
 
 | Model | Validation F1 | Kaggle score (F1) |
 |-------|---------------|-------------------|
-| Mine | 0.7738 | 0.79742 |
-| scikit-learn `MultinomialNB` | 0.7738 | 0.79742 |
+| Mine | 0.7738 | 0.79957 |
+| scikit-learn `MultinomialNB` | 0.7738 | 0.79957 |
 
 My model matches scikit-learn exactly on both the validation set and the leaderboard.
 
@@ -263,9 +263,9 @@ y_pred = model.predict(X_val)
 | Dual problem | 0.92 |
 | Gradient descent | 0.90 |
 
-**2. Titanic (Kaggle).** The same task and preprocessing as in the logistic regression notebook (family features, imputation, scaling, and encoding), with a stratified 70/30 train/validation split (623 / 268 passengers). I compare my two modes against scikit-learn's `SVC(kernel='linear')`. For the Kaggle submissions, all models are retrained on the full training set.
+**2. Titanic (Kaggle).** The same task and preprocessing as in the logistic regression notebook (family features, imputation, scaling, and encoding), with a stratified 70/30 train/validation split (623 / 268 passengers). I compare my two modes against scikit-learn's `SVC(kernel='linear')`. For the Kaggle submissions, the preprocessing pipeline is refitted on the full training set and all models are retrained on it.
 
-| Model | Validation accuracy | Kaggle score |
+| Model | Validation accuracy | Kaggle score (accuracy) |
 |-------|---------------------|--------------|
 | Mine (Dual Problem) | 0.7761 | 0.77511 |
 | Mine (Gradient Descent) | 0.7276 | 0.79186 |
