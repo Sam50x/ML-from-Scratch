@@ -114,14 +114,14 @@ y_pred = model.predict(X_val, threshold=0.5)
 - **EDA:** missing values, summary statistics, and plots of the survival distribution, age, and fare.
 - **Feature engineering:** `FamilySize` (siblings/spouses + parents/children + 1) and an `IsAlone` flag.
 - **Preprocessing:** a scikit-learn `ColumnTransformer` that imputes and standardizes the numeric features, one-hot encodes `Embarked`, ordinally encodes `Sex`, and passes `Pclass` and `IsAlone` through. `Name`, `Ticket`, and `Cabin` are dropped.
-- **Training and evaluation:** a stratified 70/30 train/validation split, comparing my model against scikit-learn's `LogisticRegression`. For the Kaggle submissions, the preprocessing pipeline is refitted on the full training set and both models are retrained on it.
+- **Training and evaluation:** a stratified 70/30 train/validation split, comparing my model against scikit-learn's `LogisticRegression` with regularization turned off (`penalty=None`), to match my model. For the Kaggle submissions, the preprocessing pipeline is refitted on the full training set and both models are retrained on it.
 
 | Model | Validation accuracy | Kaggle score (accuracy) |
 |-------|---------------------|--------------|
 | Mine | 0.8022 | 0.76315 |
-| scikit-learn `LogisticRegression` | 0.8022 | 0.76555 |
+| scikit-learn `LogisticRegression` | 0.8022 | 0.76315 |
 
-My model matches scikit-learn's validation accuracy exactly. On Kaggle, scikit-learn scores 0.76555 against my 0.76315, which is a difference of one passenger out of 418. Note that scikit-learn's `LogisticRegression` applies L2 regularization by default and mine does not, so the two models are not mathematically identical, which may be why one prediction differs.
+My model matches scikit-learn on both the validation accuracy and the Kaggle score. The predictions are not identical, though: the two models disagree on 16 of the 418 test passengers, and those differences cancel out in the score. (With scikit-learn's default L2 regularization left on, it scored 0.76555 on Kaggle, one passenger better than mine.)
 
 ## 03 - K-Nearest Neighbors (KNN)
 
