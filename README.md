@@ -13,7 +13,7 @@ The goal of this repo is to understand how each algorithm works under the hood: 
 | 03 | [K-Nearest Neighbors (KNN)](./03%20-%20KNN) | Done | Synthetic data, [Iris](https://www.kaggle.com/competitions/iris-classification-challenge) |
 | 04 | [Naive Bayes](./04%20-%20Naive%20Bayes) | Done | Synthetic data, [Disaster Tweets](https://www.kaggle.com/competitions/nlp-getting-started) |
 | 05 | [Support Vector Machine (SVM)](./05%20-%20SVM) | Done | Synthetic data, [Titanic](https://www.kaggle.com/competitions/titanic) |
-| 06 | [Decision Tree](./06%20-%20Decision%20Tree) | In progress (classifier done) | Synthetic data, [Titanic](https://www.kaggle.com/competitions/titanic) |
+| 06 | [Decision Tree](./06%20-%20Decision%20Tree) | Done | Synthetic data, [Titanic](https://www.kaggle.com/competitions/titanic) (classifier), [House Prices](https://www.kaggle.com/competitions/house-prices-advanced-regression-techniques/) (regressor) |
 | 07 | Random Forest | Planned | |
 | 08 | Boosting Trees | Planned | |
 | 09 | Principal Component Analysis (PCA) | Planned | |
@@ -328,6 +328,48 @@ y_pred = model.predict(X_val)
 
 Scikit-learn's `max_depth=3` is the same tree size as my `max_depth=2` (see the depth note above). My Gini tree matches scikit-learn exactly: the same validation accuracy, the same Kaggle score, and identical predictions for all 418 test passengers.
 
+### Regressor
+
+**Implementation:** [`my_decision_tree_regressor.py`](./06%20-%20Decision%20Tree/my_decision_tree_regressor.py)
+**Walkthrough:** [`notebook_regression.ipynb`](./06%20-%20Decision%20Tree/notebook_regression.ipynb)
+
+#### How it works
+
+`Decision_Tree_Regressor` builds a binary regression tree in the same way as the classifier, with the mean squared error as the criterion. The MSE of a node is `(1/n) Σ (y − ȳ)²`, where `ȳ` is the mean target of the samples in the node.
+
+**Training.** At each node, the tree tries every feature, with thresholds halfway between consecutive values, and scores each candidate by the weighted MSE of the two children, `(n_left/n)·MSE_left + (n_right/n)·MSE_right`. The split with the lowest cost wins, and the same procedure is applied to each child. A node becomes a leaf when all its targets are equal (MSE of 0), when the depth limit is reached, when it has a single sample, or when no split reduces the MSE. Each leaf predicts the mean target of its samples.
+
+**Prediction.** Each sample walks down the tree (left if `feature <= threshold`, right otherwise) and gets the mean of the leaf it ends up in. `predict` raises a `ValueError` if the model has not been fitted, and both `fit` and `predict` expect a pandas DataFrame for `X`.
+
+**Depth.** Depth is counted in the same way as in the classifier, so my `max_depth=k` produces the same tree size as scikit-learn's `max_depth=k+1`, and `max_depth=None` (or 0) means no limit.
+
+#### Usage
+
+```python
+from my_decision_tree_regressor import Decision_Tree_Regressor
+
+model = Decision_Tree_Regressor()
+model.fit(X_train, y_train, max_depth=3)
+y_pred = model.predict(X_val)
+```
+
+#### Experiments
+
+**1. Synthetic data** (10 samples, 5 features, with targets generated from random weights plus noise), with no depth limit. The training MSE is **0.0**, because a fully grown tree gives every sample its own leaf.
+
+**2. House Prices (Kaggle).** The same task, cleaning, and preprocessing as in the linear regression notebook, with a 70/30 train/validation split (1,022 / 438 houses).
+
+- **Unlimited depth:** validation RMSE is 27,806.72.
+- **Tuning `max_depth`:** trying depths from 0 to 10, the best validation RMSE is 24,940.43 at `max_depth=3`.
+- **Submission:** the preprocessing pipeline is refitted on the full training set and the tree is retrained on it with `max_depth=3`.
+
+| Model | Validation RMSE | Kaggle score (RMSE) |
+|-------|-----------------|---------------------|
+| Mine (`max_depth=3`) | 24,940.43 | 0.24192 |
+| scikit-learn `DecisionTreeRegressor` (`max_depth=4`) | 24,988.23 | 0.24192 |
+
+Scikit-learn's `max_depth=4` is the same tree size as my `max_depth=3`. The two models give identical predictions for all 1,459 test houses and the same Kaggle score, while their validation RMSEs are close but not identical. Validation RMSE is measured in dollars on the clipped `SalePrice` values. The Kaggle score is the competition's metric (RMSE on the log of the price), so lower is better.
+
 ## Repo structure
 
 ```
@@ -349,7 +391,9 @@ ML-from-Scratch/
 │   └── notebook.ipynb            # experiments
 ├── 06 - Decision Tree/
 │   ├── my_decision_tree_classifier.py   # the classifier
-│   └── notebook_classification.ipynb    # experiments
+│   ├── notebook_classification.ipynb    # classifier experiments
+│   ├── my_decision_tree_regressor.py    # the regressor
+│   └── notebook_regression.ipynb        # regressor experiments
 └── data/
     ├── house_prices/             # Kaggle data and submission files
     ├── titanic/                  # Kaggle data and submission files
