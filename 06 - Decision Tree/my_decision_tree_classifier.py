@@ -61,7 +61,7 @@ class Decision_Tree_Classifier:
         min_cost_feature_value = None
 
         for c in X_node.columns:
-            values = list(set(X_node[c].sort_values()))
+            values = sorted(set(X_node[c]))
 
             for i in range(len(values) - 1):
                 val = (values[i] + values[i + 1]) / 2
@@ -99,7 +99,7 @@ class Decision_Tree_Classifier:
 
         split_feature_name, split_feature_value = self.__find_split(X_node, y_node)
 
-        if not split_feature_name or not split_feature_value:
+        if split_feature_name is None:
             return
 
         mask_true = (X_node[split_feature_name] <= split_feature_value)
