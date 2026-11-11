@@ -13,7 +13,7 @@ The goal of this repo is to understand how each algorithm works under the hood: 
 | 03 | [K-Nearest Neighbors (KNN)](./03%20-%20KNN) | Done | Synthetic data, [Iris](https://www.kaggle.com/competitions/iris-classification-challenge) |
 | 04 | [Naive Bayes](./04%20-%20Naive%20Bayes) | Done | Synthetic data, [Disaster Tweets](https://www.kaggle.com/competitions/nlp-getting-started) |
 | 05 | [Support Vector Machine (SVM)](./05%20-%20SVM) | Done | Synthetic data, [Titanic](https://www.kaggle.com/competitions/titanic) |
-| 06 | Decision Tree | Planned | |
+| 06 | [Decision Tree](./06%20-%20Decision%20Tree) | In progress (classifier done) | Synthetic data, [Titanic](https://www.kaggle.com/competitions/titanic) |
 | 07 | Random Forest | Planned | |
 | 08 | Boosting Trees | Planned | |
 | 09 | Principal Component Analysis (PCA) | Planned | |
@@ -275,6 +275,59 @@ The dual problem version matches scikit-learn exactly: the same validation accur
 
 The dual problem is solved with a general-purpose optimizer, so training time grows quickly with the number of samples.
 
+## 06 - Decision Tree
+
+### Classifier
+
+**Implementation:** [`my_decision_tree_classifier.py`](./06%20-%20Decision%20Tree/my_decision_tree_classifier.py)
+**Walkthrough:** [`notebook_classification.ipynb`](./06%20-%20Decision%20Tree/notebook_classification.ipynb)
+
+#### How it works
+
+`Decision_Tree_Classifier` builds a binary classification tree in the style of CART. The `mode` argument chooses the impurity measure used to score splits:
+
+- **`gini`** (default): `1 − Σ pₖ²`, where `pₖ` is the fraction of samples of class `k` in the node.
+- **`entropy`**: `−Σ pₖ log₂ pₖ`.
+
+**Training.** Starting from the root, the tree looks for the best split of the samples in the current node. It tries every feature, with thresholds halfway between consecutive values, and scores each candidate by the weighted impurity of the two children, `(n_left/n)·impurity_left + (n_right/n)·impurity_right`. The split with the lowest cost wins, and the same procedure is applied to each child. A node becomes a leaf when it is pure, when the depth limit is reached, when it has a single sample, or when no split reduces the impurity. Each leaf predicts the most common class among its samples.
+
+**Prediction.** Each sample walks down the tree: it goes to the left child if `feature <= threshold` and to the right child otherwise, and it gets the prediction of the leaf it ends up in. `predict` raises a `ValueError` if the model has not been fitted. Both `fit` and `predict` expect a pandas DataFrame, because splits are stored by column name.
+
+**Depth.** The root is at depth 0 and nodes at depth `max_depth` can still be split once, so my `max_depth=k` produces the same tree as scikit-learn's `max_depth=k+1`. `max_depth=None` (or 0) means no limit.
+
+#### Usage
+
+```python
+from my_decision_tree_classifier import Decision_Tree_Classifier
+
+model = Decision_Tree_Classifier(mode='gini')
+model.fit(X_train, y_train, max_depth=2)
+y_pred = model.predict(X_val)
+```
+
+#### Experiments
+
+**1. Synthetic data** (100 samples, 5 features, labels generated from random weights plus noise through a sigmoid), with no depth limit. Accuracy on the training data:
+
+| Impurity | Accuracy |
+|----------|----------|
+| Gini | 1.00 |
+| Entropy | 1.00 |
+
+**2. Titanic (Kaggle).** The same task and preprocessing as in the logistic regression notebook, with a stratified 70/30 train/validation split (623 / 268 passengers).
+
+- **Unlimited depth:** validation accuracy is 0.7425 with Gini and 0.7537 with entropy.
+- **Tuning `max_depth`:** trying depths from 0 to 10, the best validation accuracy is at `max_depth=2` for both impurity measures: 0.7985 with Gini and 0.8097 with entropy.
+- **Submission:** with `max_depth=2`, the preprocessing pipeline is refitted on the full training set and the models are retrained on it.
+
+| Model | Validation accuracy | Kaggle score (accuracy) |
+|-------|---------------------|--------------------------|
+| Mine (Gini, `max_depth=2`) | 0.7985 | 0.77511 |
+| Mine (Entropy, `max_depth=2`) | 0.8097 | 0.77511 |
+| scikit-learn `DecisionTreeClassifier` (Gini, `max_depth=3`) | 0.7985 | 0.77511 |
+
+Scikit-learn's `max_depth=3` is the same tree size as my `max_depth=2` (see the depth note above). My Gini tree matches scikit-learn exactly: the same validation accuracy, the same Kaggle score, and identical predictions for all 418 test passengers.
+
 ## Repo structure
 
 ```
@@ -294,6 +347,9 @@ ML-from-Scratch/
 ├── 05 - SVM/
 │   ├── my_svm.py                 # the model
 │   └── notebook.ipynb            # experiments
+├── 06 - Decision Tree/
+│   ├── my_decision_tree_classifier.py   # the classifier
+│   └── notebook_classification.ipynb    # experiments
 └── data/
     ├── house_prices/             # Kaggle data and submission files
     ├── titanic/                  # Kaggle data and submission files
