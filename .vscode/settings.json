@@ -1,0 +1,17 @@
+{
+    "python.analysis.extraPaths": [
+        "./01 - Linear Regression",
+        "./02 - Logistic Regression",
+        "./03 - KNN",
+        "./04 - Naive Bayes",
+        "./05 - SVM",
+        "./06 - Decision Tree",
+        "./07 - Random Forest",
+        "./08 - Boosting Tree",
+        "./09 - PCA",
+        "./10 - KMeans",
+        "./11 - DBSCAN",
+        "./12 - GMM",
+        "./13 - Stacking",
+    ]
+}
