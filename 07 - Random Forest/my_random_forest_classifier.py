@@ -13,15 +13,18 @@ class Random_Forest_Classifier:
     def __init__(self):
         self.is_fitted = False
 
-    def fit(self, X, y, max_depth=None, n_estimators=100):
+    def fit(self, X, y, max_depth=None, n_estimators=100, frac_instances=0.8, frac_features=0.8):
         self.estimators = np.array([])
 
         for n in range(n_estimators):
-            sampled_indices = X.sample(frac=0.2, replace=True, random_state=n).index
-            mask = X.index.isin(sampled_indices)
+            sampled_instances = X.sample(frac=frac_instances, replace=True, random_state=n).index
+            mask_instances = X.index.isin(set(sampled_instances))
+
+            sampled_cols = X.sample(frac=frac_features, replace=True, random_state=n, axis=1).columns
+            mask_cols = X.columns.isin(set(sampled_cols))
 
             tree = Decision_Tree_Classifier()
-            tree.fit(X[mask], y[mask], max_depth)
+            tree.fit(X.loc[mask_instances, mask_cols], y[mask_instances], max_depth)
 
             self.estimators = np.append(self.estimators, tree)
 
