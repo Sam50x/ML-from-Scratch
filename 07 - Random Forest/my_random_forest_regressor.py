@@ -18,10 +18,9 @@ class Random_Forest_Regressor:
 
         for n in range(n_estimators):
             sampled_instances = X.sample(frac=frac_instances, replace=True, random_state=n).index
-            mask_instances = X.index.isin(set(sampled_instances))
 
             tree = Decision_Tree_Regressor()
-            tree.fit(X[mask_instances], y[mask_instances], max_depth, frac_features=frac_features, random_state=n)
+            tree.fit(X.loc[sampled_instances], y[sampled_instances], max_depth, frac_features=frac_features, random_state=n)
 
             self.estimators = np.append(self.estimators, tree)
 

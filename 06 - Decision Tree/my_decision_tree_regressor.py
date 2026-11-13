@@ -84,9 +84,8 @@ class Decision_Tree_Regressor:
 
         if not frac_features is None:
             sampled_cols = X_node.sample(frac=frac_features, random_state=random_state * current_depth, axis=1).columns
-            mask_cols = X_node.columns.isin(set(sampled_cols))
 
-            X_node = X_node.loc[:, mask_cols]
+            X_node = X_node.loc[:, sampled_cols]
 
         split_feature_name, split_feature_value = self.__find_split(X_node, y_node)
 
@@ -107,7 +106,7 @@ class Decision_Tree_Regressor:
             parent.false_node = Node(y_node[mask_false], mse_false)
 
             self.__create_split_nodes(X_node[mask_true], y_node[mask_true], parent.true_node, max_depth, current_depth + 1, frac_features, random_state)
-            self.__create_split_nodes(X_node[mask_false], y_node[mask_false], parent.false_node, max_depth, current_depth + 1, frac_features, random_state)
+            self.__create_split_nodes(X_node[mask_false], y_node[mask_false], parent.false_node, max_depth, current_depth + 1, frac_features, random_state + 1)
 
         return
 
