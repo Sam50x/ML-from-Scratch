@@ -20,11 +20,8 @@ class Random_Forest_Classifier:
             sampled_instances = X.sample(frac=frac_instances, replace=True, random_state=n).index
             mask_instances = X.index.isin(set(sampled_instances))
 
-            sampled_cols = X.sample(frac=frac_features, replace=True, random_state=n, axis=1).columns
-            mask_cols = X.columns.isin(set(sampled_cols))
-
             tree = Decision_Tree_Classifier()
-            tree.fit(X.loc[mask_instances, mask_cols], y[mask_instances], max_depth)
+            tree.fit(X[mask_instances], y[mask_instances], max_depth, frac_features=frac_features, random_state=n)
 
             self.estimators = np.append(self.estimators, tree)
 

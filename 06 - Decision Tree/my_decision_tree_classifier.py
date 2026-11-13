@@ -10,12 +10,12 @@ class Decision_Tree_Classifier:
         self.mode = mode
         self.root = None
 
-    def fit(self, X, y, max_depth=None):
+    def fit(self, X, y, max_depth=None, frac_features=None, random_state=42):
         overall_impurity = self.__calculate_impurity(y)
 
         self.root = Node(y, overall_impurity)
 
-        self.__create_split_nodes(X, y, parent=self.root, max_depth=max_depth, current_depth=0)
+        self.__create_split_nodes(X, y, parent=self.root, max_depth=max_depth, current_depth=0, frac_features=frac_features, random_state=random_state)
 
         self.is_fitted = True
 
@@ -93,9 +93,15 @@ class Decision_Tree_Classifier:
 
         return cart_cost
 
-    def __create_split_nodes(self, X_node, y_node, parent, max_depth, current_depth):
+    def __create_split_nodes(self, X_node, y_node, parent, max_depth, current_depth, frac_features, random_state):
         if (max_depth and max_depth < current_depth) or len(X_node) == 1 or parent.impurity == 0:
             return
+
+        if not frac_features is None:
+            sampled_cols = X_node.sample(frac=frac_features, random_state=random_state, axis=1).columns
+            mask_cols = X_node.columns.isin(set(sampled_cols))
+
+            X_node = X_node.loc[:, mask_cols]
 
         split_feature_name, split_feature_value = self.__find_split(X_node, y_node)
 
@@ -115,8 +121,8 @@ class Decision_Tree_Classifier:
             parent.true_node = Node(y_node[mask_true], impurity_true)
             parent.false_node = Node(y_node[mask_false], impurity_false)
 
-            self.__create_split_nodes(X_node[mask_true], y_node[mask_true], parent.true_node, max_depth, current_depth + 1)
-            self.__create_split_nodes(X_node[mask_false], y_node[mask_false], parent.false_node, max_depth, current_depth + 1)
+            self.__create_split_nodes(X_node[mask_true], y_node[mask_true], parent.true_node, max_depth, current_depth + 1, frac_features, random_state)
+            self.__create_split_nodes(X_node[mask_false], y_node[mask_false], parent.false_node, max_depth, current_depth + 1, frac_features, random_state)
 
         return
 
