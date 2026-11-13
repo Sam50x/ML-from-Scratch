@@ -98,7 +98,7 @@ class Decision_Tree_Classifier:
             return
 
         if not frac_features is None:
-            sampled_cols = X_node.sample(frac=frac_features, random_state=random_state, axis=1).columns
+            sampled_cols = X_node.sample(frac=frac_features, random_state=random_state * current_depth, axis=1).columns
             mask_cols = X_node.columns.isin(set(sampled_cols))
 
             X_node = X_node.loc[:, mask_cols]
