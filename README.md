@@ -295,6 +295,8 @@ The dual problem is solved with a general-purpose optimizer, so training time gr
 
 **Depth.** The root is at depth 0 and nodes at depth `max_depth` can still be split once, so my `max_depth=k` produces the same tree as scikit-learn's `max_depth=k+1`. `max_depth=None` (or 0) means no limit.
 
+**Random forest support.** `fit` also accepts `frac_features` and `random_state`. With `frac_features` set (default `None`), each node searches for its split among a random subset of that fraction of the columns, drawn without replacement, instead of all of them. The children still receive all the columns, and `random_state` seeds the random draws. The random forest uses this.
+
 #### Usage
 
 ```python
@@ -341,7 +343,7 @@ Scikit-learn's `max_depth=3` is the same tree size as my `max_depth=2` (see the 
 
 **Prediction.** Each sample walks down the tree (left if `feature <= threshold`, right otherwise) and gets the mean of the leaf it ends up in. `predict` raises a `ValueError` if the model has not been fitted, and both `fit` and `predict` expect a pandas DataFrame for `X`.
 
-**Depth.** Depth is counted in the same way as in the classifier, so my `max_depth=k` produces the same tree size as scikit-learn's `max_depth=k+1`, and `max_depth=None` (or 0) means no limit.
+**Depth.** Depth is counted in the same way as in the classifier, so my `max_depth=k` produces the same tree size as scikit-learn's `max_depth=k+1`, and `max_depth=None` (or 0) means no limit. Like the classifier, `fit` also accepts `frac_features` and `random_state` for use by the random forest.
 
 #### Usage
 
@@ -383,11 +385,8 @@ Both forests are built from the decision trees in [`06 - Decision Tree`](./06%20
 
 `Random_Forest_Classifier` is an ensemble of `Decision_Tree_Classifier` trees. Each of the `n_estimators` trees is built like this:
 
-1. Draw `frac_instances × n` rows at random with replacement (seeded with the tree's number, so results are reproducible) and keep the distinct rows drawn.
-2. Draw `frac_features × p` columns in the same way and keep the distinct columns drawn.
-3. Train a tree with the given `max_depth` on that sub-table.
-
-Because repeated draws are counted once, a fraction `f` leaves each tree with about `1 − e^(−f)` of the rows and of the columns (about 55% for `f = 0.8` and about 33% for `f = 0.4`). The features are chosen once per tree, not again at every split.
+1. Draw `frac_instances × n` rows at random with replacement (seeded with the tree's number, so results are reproducible). Repeated rows are kept, as in a standard bootstrap sample.
+2. Train a tree with the given `max_depth` on that sample. At every node, the tree draws a fresh random subset of `frac_features` of the columns (without replacement) and searches for its best split among those only.
 
 **Prediction.** Every tree predicts and the forest returns the majority vote. If the vote is tied, the smaller class label wins. `predict` raises a `ValueError` if the model has not been fitted, and both `fit` and `predict` expect a pandas DataFrame for `X`.
 
@@ -403,16 +402,16 @@ y_pred = model.predict(X_val)
 
 #### Experiments
 
-**1. Synthetic data** (100 samples, 5 features, labels generated from random weights plus noise through a sigmoid), with `max_depth=2` and 100 trees. The accuracy on the training data is **0.96**.
+**1. Synthetic data** (100 samples, 5 features, labels generated from random weights plus noise through a sigmoid), with `max_depth=2` and 100 trees. The accuracy on the training data is **0.97**.
 
 **2. Titanic (Kaggle).** The same task and preprocessing as in the logistic regression notebook, with a stratified 70/30 train/validation split (623 / 268 passengers). For the Kaggle submissions, the preprocessing pipeline is refitted on the full training set and both models are retrained on it.
 
 | Model | Validation accuracy | Kaggle score (accuracy) |
 |-------|---------------------|--------------------------|
-| Mine (`max_depth=2`) | 0.8172 | 0.77511 |
+| Mine (`max_depth=2`) | 0.8022 | 0.78229 |
 | scikit-learn `RandomForestClassifier` (`max_depth=3`) | 0.8060 | 0.78468 |
 
-Both forests use 100 trees, 80% of the rows, and 80% of the features, and scikit-learn's `max_depth=3` is the same tree size as my `max_depth=2` (see the depth note in the decision tree section). The two forests are still not identical: scikit-learn keeps repeated rows in each sample and picks the features again at every split, while mine keeps each distinct row once and fixes the features per tree. On the test set they disagree on 12 of the 418 passengers.
+Both forests use 100 trees, 80% of the rows, and 80% of the features, and scikit-learn's `max_depth=3` is the same tree size as my `max_depth=2` (see the depth note in the decision tree section). The two forests use the same design but different random draws, so they are not identical. On the test set they disagree on 3 of the 418 passengers.
 
 ### Regressor
 
@@ -435,16 +434,16 @@ y_pred = model.predict(X_val)
 
 #### Experiments
 
-**1. Synthetic data** (10 samples, 5 features, targets generated from random weights plus noise), with 100 trees, no depth limit, and 40% of the rows and features per tree. The MSE on the training data is **1.02**.
+**1. Synthetic data** (10 samples, 5 features, targets generated from random weights plus noise), with 100 trees, no depth limit, and 40% of the rows and 40% of the features. The MSE on the training data is **1.00**.
 
 **2. House Prices (Kaggle).** The same task, cleaning, and preprocessing as in the decision tree regressor notebook, with a 70/30 train/validation split (1,022 / 438 houses). For the Kaggle submissions, the preprocessing pipeline is refitted on the full training set and both models are retrained on it.
 
 | Model | Validation RMSE | Kaggle score (RMSE) |
 |-------|-----------------|---------------------|
-| Mine (`max_depth=3`) | 21,409.27 | 0.23665 |
+| Mine (`max_depth=3`) | 19,634.59 | 0.22817 |
 | scikit-learn `RandomForestRegressor` (`max_depth=4`) | 19,762.60 | 0.22887 |
 
-Both forests use 100 trees, 40% of the rows, and 40% of the features, and scikit-learn's `max_depth=4` is the same tree size as my `max_depth=3`. As in the classifier, scikit-learn picks the features again at every split and keeps repeated rows, while mine fixes the features per tree and keeps each distinct row once. Validation RMSE is measured in dollars on the clipped `SalePrice` values. The Kaggle score is the competition's metric (RMSE on the log of the price), so lower is better.
+Both forests use 100 trees, 40% of the rows, and 40% of the features, and scikit-learn's `max_depth=4` is the same tree size as my `max_depth=3`. As in the classifier, the two forests use the same design but different random draws, so they are not identical. Validation RMSE is measured in dollars on the clipped `SalePrice` values. The Kaggle score is the competition's metric (RMSE on the log of the price), so lower is better.
 
 ## Repo structure
 
