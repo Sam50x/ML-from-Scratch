@@ -14,7 +14,7 @@ The goal of this repo is to understand how each algorithm works under the hood: 
 | 04 | [Naive Bayes](./04%20-%20Naive%20Bayes) | Done | Synthetic data, [Disaster Tweets](https://www.kaggle.com/competitions/nlp-getting-started) |
 | 05 | [Support Vector Machine (SVM)](./05%20-%20SVM) | Done | Synthetic data, [Titanic](https://www.kaggle.com/competitions/titanic) |
 | 06 | [Decision Tree](./06%20-%20Decision%20Tree) | Done | Synthetic data, [Titanic](https://www.kaggle.com/competitions/titanic) (classifier), [House Prices](https://www.kaggle.com/competitions/house-prices-advanced-regression-techniques/) (regressor) |
-| 07 | Random Forest | Planned | |
+| 07 | [Random Forest](./07%20-%20Random%20Forest) | Done | Synthetic data, [Titanic](https://www.kaggle.com/competitions/titanic) (classifier), [House Prices](https://www.kaggle.com/competitions/house-prices-advanced-regression-techniques/) (regressor) |
 | 08 | Boosting Trees | Planned | |
 | 09 | Principal Component Analysis (PCA) | Planned | |
 | 10 | K-Means | Planned | |
@@ -370,6 +370,82 @@ y_pred = model.predict(X_val)
 
 Scikit-learn's `max_depth=4` is the same tree size as my `max_depth=3`. The two models give identical predictions for all 1,459 test houses and the same Kaggle score, while their validation RMSEs are close but not identical. Validation RMSE is measured in dollars on the clipped `SalePrice` values. The Kaggle score is the competition's metric (RMSE on the log of the price), so lower is better.
 
+## 07 - Random Forest
+
+Both forests are built from the decision trees in [`06 - Decision Tree`](./06%20-%20Decision%20Tree), which they import by path, so keep the two folders side by side.
+
+### Classifier
+
+**Implementation:** [`my_random_forest_classifier.py`](./07%20-%20Random%20Forest/my_random_forest_classifier.py)
+**Walkthrough:** [`notebook_classification.ipynb`](./07%20-%20Random%20Forest/notebook_classification.ipynb)
+
+#### How it works
+
+`Random_Forest_Classifier` is an ensemble of `Decision_Tree_Classifier` trees. Each of the `n_estimators` trees is built like this:
+
+1. Draw `frac_instances × n` rows at random with replacement (seeded with the tree's number, so results are reproducible) and keep the distinct rows drawn.
+2. Draw `frac_features × p` columns in the same way and keep the distinct columns drawn.
+3. Train a tree with the given `max_depth` on that sub-table.
+
+Because repeated draws are counted once, a fraction `f` leaves each tree with about `1 − e^(−f)` of the rows and of the columns (about 55% for `f = 0.8` and about 33% for `f = 0.4`). The features are chosen once per tree, not again at every split.
+
+**Prediction.** Every tree predicts and the forest returns the majority vote. If the vote is tied, the smaller class label wins. `predict` raises a `ValueError` if the model has not been fitted, and both `fit` and `predict` expect a pandas DataFrame for `X`.
+
+#### Usage
+
+```python
+from my_random_forest_classifier import Random_Forest_Classifier
+
+model = Random_Forest_Classifier()
+model.fit(X_train, y_train, max_depth=2, n_estimators=100, frac_instances=0.8, frac_features=0.8)
+y_pred = model.predict(X_val)
+```
+
+#### Experiments
+
+**1. Synthetic data** (100 samples, 5 features, labels generated from random weights plus noise through a sigmoid), with `max_depth=2` and 100 trees. The accuracy on the training data is **0.96**.
+
+**2. Titanic (Kaggle).** The same task and preprocessing as in the logistic regression notebook, with a stratified 70/30 train/validation split (623 / 268 passengers). For the Kaggle submissions, the preprocessing pipeline is refitted on the full training set and both models are retrained on it.
+
+| Model | Validation accuracy | Kaggle score (accuracy) |
+|-------|---------------------|--------------------------|
+| Mine (`max_depth=2`) | 0.8172 | 0.77511 |
+| scikit-learn `RandomForestClassifier` (`max_depth=3`) | 0.8060 | 0.78468 |
+
+Both forests use 100 trees, 80% of the rows, and 80% of the features, and scikit-learn's `max_depth=3` is the same tree size as my `max_depth=2` (see the depth note in the decision tree section). The two forests are still not identical: scikit-learn keeps repeated rows in each sample and picks the features again at every split, while mine keeps each distinct row once and fixes the features per tree. On the test set they disagree on 12 of the 418 passengers.
+
+### Regressor
+
+**Implementation:** [`my_random_forest_regressor.py`](./07%20-%20Random%20Forest/my_random_forest_regressor.py)
+**Walkthrough:** [`notebook_regression.ipynb`](./07%20-%20Random%20Forest/notebook_regression.ipynb)
+
+#### How it works
+
+`Random_Forest_Regressor` works in the same way as the classifier, with `Decision_Tree_Regressor` trees, and the forest's prediction is the average of the trees' predictions. It has the same `fit` arguments (`max_depth`, `n_estimators`, `frac_instances`, `frac_features`) and raises a `ValueError` if `predict` is called before `fit`.
+
+#### Usage
+
+```python
+from my_random_forest_regressor import Random_Forest_Regressor
+
+model = Random_Forest_Regressor()
+model.fit(X_train, y_train, max_depth=3, n_estimators=100, frac_instances=0.4, frac_features=0.4)
+y_pred = model.predict(X_val)
+```
+
+#### Experiments
+
+**1. Synthetic data** (10 samples, 5 features, targets generated from random weights plus noise), with 100 trees, no depth limit, and 40% of the rows and features per tree. The MSE on the training data is **1.02**.
+
+**2. House Prices (Kaggle).** The same task, cleaning, and preprocessing as in the decision tree regressor notebook, with a 70/30 train/validation split (1,022 / 438 houses). For the Kaggle submissions, the preprocessing pipeline is refitted on the full training set and both models are retrained on it.
+
+| Model | Validation RMSE | Kaggle score (RMSE) |
+|-------|-----------------|---------------------|
+| Mine (`max_depth=3`) | 21,409.27 | 0.23665 |
+| scikit-learn `RandomForestRegressor` (`max_depth=4`) | 19,762.60 | 0.22887 |
+
+Both forests use 100 trees, 40% of the rows, and 40% of the features, and scikit-learn's `max_depth=4` is the same tree size as my `max_depth=3`. As in the classifier, scikit-learn picks the features again at every split and keeps repeated rows, while mine fixes the features per tree and keeps each distinct row once. Validation RMSE is measured in dollars on the clipped `SalePrice` values. The Kaggle score is the competition's metric (RMSE on the log of the price), so lower is better.
+
 ## Repo structure
 
 ```
@@ -393,6 +469,11 @@ ML-from-Scratch/
 │   ├── my_decision_tree_classifier.py   # the classifier
 │   ├── notebook_classification.ipynb    # classifier experiments
 │   ├── my_decision_tree_regressor.py    # the regressor
+│   └── notebook_regression.ipynb        # regressor experiments
+├── 07 - Random Forest/
+│   ├── my_random_forest_classifier.py   # the classifier
+│   ├── notebook_classification.ipynb    # classifier experiments
+│   ├── my_random_forest_regressor.py    # the regressor
 │   └── notebook_regression.ipynb        # regressor experiments
 └── data/
     ├── house_prices/             # Kaggle data and submission files
