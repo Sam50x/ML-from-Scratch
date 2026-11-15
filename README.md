@@ -478,16 +478,16 @@ y_pred = model.predict(X_val)
 
 #### Experiments
 
-**1. Synthetic data** (10 samples, 5 features, targets generated from random weights plus noise), with the default settings. The MSE on the training data is about **0.00005**, because the ensemble fits the 10 points almost exactly.
+**1. Synthetic data** (10 samples, 5 features, targets generated from random weights plus noise), with the default settings. The MSE on the training data is about **0.00004**, because the ensemble fits the 10 points almost exactly.
 
 **2. House Prices (Kaggle).** The same task, cleaning, preprocessing, and train/validation split as in the decision tree regressor notebook (1,022 / 438 houses). For the Kaggle submissions, the preprocessing pipeline is refitted on the full training set and both models are retrained on it.
 
 | Model | Validation RMSE | Kaggle score (RMSE) |
 |-------|-----------------|---------------------|
-| Mine (`max_depth=4`, 50 estimators) | 16,324.49 | 0.19305 |
+| Mine (`max_depth=4`, 50 estimators) | 16,303.76 | 0.19286 |
 | scikit-learn `GradientBoostingRegressor` (`max_depth=5`, 50 estimators) | 16,086.96 | 0.19286 |
 
-Both models use a learning rate of 0.1, and scikit-learn's `max_depth=5` is the same tree size as my `max_depth=4`. On the test set, their predictions differ by about $436 per house on average. Validation RMSE is measured in dollars on the clipped `SalePrice` values. The Kaggle score is the competition's metric (RMSE on the log of the price), so lower is better.
+Both models use a learning rate of 0.1, and scikit-learn's `max_depth=5` is the same tree size as my `max_depth=4`. On the test set, their predictions differ by about $327 per house on average. Validation RMSE is measured in dollars on the clipped `SalePrice` values. The Kaggle score is the competition's metric (RMSE on the log of the price), so lower is better.
 
 ## Model comparison
 
@@ -510,7 +510,7 @@ A quick look at how my from-scratch models compare on the two main Kaggle datase
 |------|-------|-----------------|---------------------|
 | 1 | Linear Regression (gradient descent) | 18,412.13 | 0.16219 |
 | 2 | Linear Regression (normal equation) | 18,884.06 | 0.16664 |
-| 3 | Gradient Boosting (`max_depth=4`) | 16,324.49 | 0.19305 |
+| 3 | Gradient Boosting (`max_depth=4`) | 16,303.76 | 0.19286 |
 | 4 | Random Forest (`max_depth=3`) | 19,634.59 | 0.22817 |
 | 5 | Decision Tree (`max_depth=3`) | 24,940.43 | 0.24192 |
 
