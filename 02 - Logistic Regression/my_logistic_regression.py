@@ -1,27 +1,30 @@
 import numpy as np
 
 class Logistic_Regression():
-    def __init__(self):
+    def __init__(self, epochs=1000, learning_rate=0.1):
         self.is_fitted = False
-        
+
+        self.epochs = epochs
+        self.learning_rate = learning_rate
+
         self.bias_ = None
         self.weights_ = None
 
-    def fit(self, X, y, epochs=1000, learning_rate=0.1):
+    def fit(self, X, y):
         p = X.shape[1]
 
         w = np.random.randn(p)
         b = np.random.randn()
 
-        for _ in range(epochs):
+        for _ in range(self.epochs):
             linear = X @ w.T + b
 
             proba = self._predict_proba(linear)
 
             grad_b, grad_w = self._calculate_gradients(X, y, proba)
 
-            b = b - learning_rate * grad_b
-            w = w - learning_rate * grad_w
+            b = b - self.learning_rate * grad_b
+            w = w - self.learning_rate * grad_w
 
         self.bias_ = b
         self.weights_ = w

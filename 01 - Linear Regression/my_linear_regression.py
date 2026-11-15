@@ -3,21 +3,23 @@ import numpy as np
 np.random.seed(42)
 
 class Linear_Regression:
-    def __init__(self, mode='normal_equation'):
+    def __init__(self, mode='normal_equation', epochs=1000, learning_rate=0.01):
         if mode != 'normal_equation' and mode != 'gradient_descent':
             raise ValueError('Linear Regression mode can either be \'normal_equation\' or \'gradient_descent\'')
 
         self.is_fitted = False
 
+        self.epochs = epochs
+        self.learning_rate = learning_rate
         self.mode = mode
         self.weights_ = None
         self.intercept_ = None
 
-    def fit(self, X, y, epochs=1000, learning_rate=0.01):
+    def fit(self, X, y):
         if self.mode == 'normal_equation':
             self.__fit_using_normal_equation(X, y)
         elif self.mode == 'gradient_descent':
-            self.__fit_using_gradient_descent(X, y, epochs, learning_rate)
+            self.__fit_using_gradient_descent(X, y, self.epochs, self.learning_rate)
 
         self.is_fitted = True
 

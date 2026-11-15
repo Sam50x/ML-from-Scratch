@@ -4,26 +4,31 @@ from scipy.optimize import minimize
 np.random.seed(42)
 
 class SVM:
-    def __init__(self, mode='dual_problem'):
+    def __init__(self, mode='dual_problem', C=1.0, epochs=1000, learning_rate=0.01, regularization_rate=0.01):
         self.is_fitted = False
 
         if mode != 'dual_problem' and mode != 'gradient_descent':
             raise ValueError('SVM mode can either be \'dual_problem\' or \'gradient_descent\'')
 
+        self.C = C
+        self.epochs = epochs
+        self.learning_rate = learning_rate
+        self.regularization_rate = regularization_rate
+
         self.mode = mode
         self.weights_ = None
         self.bias_ = None
 
-    def fit(self, X, y, C=1.0, epochs=1000, learning_rate=0.01, regularization_rate=0.01):
+    def fit(self, X, y):
         X = np.asarray(X, dtype=float)
         y = np.asarray(y)
 
         y_sign = np.where(y == 1, 1, -1)
 
         if self.mode == 'dual_problem':
-            self.__fit_using_dual_problem(X, y_sign, C)
+            self.__fit_using_dual_problem(X, y_sign, self.C)
         elif self.mode == 'gradient_descent':
-            self.__fit_using_gradient_descent(X, y_sign, epochs, learning_rate, regularization_rate)
+            self.__fit_using_gradient_descent(X, y_sign, self.epochs, self.learning_rate, self.regularization_rate)
 
         self.is_fitted = True
 

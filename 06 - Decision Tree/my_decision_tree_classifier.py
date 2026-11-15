@@ -1,23 +1,26 @@
 import numpy as np
 
 class Decision_Tree_Classifier:
-    def __init__(self, mode='gini'):
+    def __init__(self, mode='gini', max_depth=None, frac_features=None, random_state=42):
         self.is_fitted = False
 
         if mode != 'gini' and mode != 'entropy':
             raise ValueError('Decision Tree mode can either be \'gini\' or \'entropy\'')
 
+        self.max_depth = max_depth
+        self.frac_features = frac_features
+        self.random_state = random_state
         self.mode = mode
         self.root = None
 
-    def fit(self, X, y, max_depth=None, frac_features=None, random_state=42):
-        self.rng = np.random.default_rng(random_state)
+    def fit(self, X, y):
+        self.rng = np.random.default_rng(self.random_state)
 
         overall_impurity = self.__calculate_impurity(y)
 
         self.root = Node(y, overall_impurity)
 
-        self.__create_split_nodes(X, y, parent=self.root, max_depth=max_depth, current_depth=0, frac_features=frac_features)
+        self.__create_split_nodes(X, y, parent=self.root, max_depth=self.max_depth, current_depth=0, frac_features=self.frac_features)
 
         self.is_fitted = True
 

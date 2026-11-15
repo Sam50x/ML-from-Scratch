@@ -1,13 +1,14 @@
 class Naive_Bayes:
-    def __init__(self):
+    def __init__(self, alpha=1):
         self.is_fitted = False
+        self.alpha = alpha
 
-    def fit(self, X, y, alpha=1):
+    def fit(self, X, y):
         df = X.copy()
         df['label'] = y
 
         label_counts = df['label'].value_counts()
-        word_counts = df.groupby('label').sum() + alpha
+        word_counts = df.groupby('label').sum() + self.alpha
         total_words_in_label = word_counts.sum(axis=1)
 
         proba_labels = label_counts / label_counts.sum()

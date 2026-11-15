@@ -3,21 +3,18 @@ import numpy as np
 import sys
 sys.path.append('../06 - Decision Tree')
 
-import importlib
-import my_decision_tree_regressor
-
-importlib.reload(my_decision_tree_regressor)
 from my_decision_tree_regressor import Decision_Tree_Regressor
 
 class Gradient_Boosting_Classifier:
-    def __init__(self):
+    def __init__(self, max_depth=4, n_estimators=50, learning_rate=0.1):
         self.is_fitted = False
+        self.max_depth = max_depth
+        self.n_estimators = n_estimators
+        self.learning_rate = learning_rate
 
-    def fit(self, X, y, max_depth=4, n_estimators=50, learning_rate=0.1):
+    def fit(self, X, y):
         class_counts = np.unique_counts(y)
         self.initial_leaf = np.log((class_counts.counts[1] + -1.4e-13) / (class_counts.counts[0] + -1.4e-13))
-
-        self.learning_rate = learning_rate
 
         self.estimators = np.array([])
 
@@ -25,12 +22,12 @@ class Gradient_Boosting_Classifier:
         current_proba = self.__calculate_proba(current_raw)
         current_residuals = y - current_proba
 
-        for i in range(n_estimators):
-            tree = Decision_Tree_Regressor()
-            tree.fit(X, current_residuals, max_depth)
+        for i in range(self.n_estimators):
+            tree = Decision_Tree_Regressor(max_depth=self.max_depth)
+            tree.fit(X, current_residuals)
             tree_pred = tree.predict(X)
 
-            current_raw += learning_rate * tree_pred
+            current_raw += self.learning_rate * tree_pred
             current_proba = self.__calculate_proba(current_raw)
             current_residuals = y - current_proba
 
