@@ -21,7 +21,7 @@ class Decision_Tree_Regressor:
         if not self.is_fitted:
             raise ValueError('Model is not fitted')
 
-        y_pred = np.array([], dtype='int')
+        y_pred = np.array([])
 
         for _, x in X.iterrows():
             current_node = self.root

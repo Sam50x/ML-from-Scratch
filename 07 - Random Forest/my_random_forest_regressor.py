@@ -35,7 +35,7 @@ class Random_Forest_Regressor:
 
         predictions = np.vstack(predictions)
 
-        y_pred = np.array([], dtype='int')
+        y_pred = np.array([])
 
         for i in range(len(X)):
             votes = predictions[:, i]
