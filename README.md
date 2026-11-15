@@ -15,7 +15,7 @@ The goal of this repo is to understand how each algorithm works under the hood: 
 | 05 | [Support Vector Machine (SVM)](./05%20-%20SVM) | Done | Synthetic data, [Titanic](https://www.kaggle.com/competitions/titanic) |
 | 06 | [Decision Tree](./06%20-%20Decision%20Tree) | Done | Synthetic data, [Titanic](https://www.kaggle.com/competitions/titanic) (classifier), [House Prices](https://www.kaggle.com/competitions/house-prices-advanced-regression-techniques/) (regressor) |
 | 07 | [Random Forest](./07%20-%20Random%20Forest) | Done | Synthetic data, [Titanic](https://www.kaggle.com/competitions/titanic) (classifier), [House Prices](https://www.kaggle.com/competitions/house-prices-advanced-regression-techniques/) (regressor) |
-| 08 | [Gradient Boosting](./08%20-%20Gradient%20Boosting) | In progress (regressor done) | Synthetic data, [House Prices](https://www.kaggle.com/competitions/house-prices-advanced-regression-techniques/) (regressor) |
+| 08 | [Gradient Boosting](./08%20-%20Gradient%20Boosting) | Done | Synthetic data, [Titanic](https://www.kaggle.com/competitions/titanic) (classifier), [House Prices](https://www.kaggle.com/competitions/house-prices-advanced-regression-techniques/) (regressor) |
 | 09 | Principal Component Analysis (PCA) | Planned | |
 | 10 | K-Means | Planned | |
 | 11 | DBSCAN | Planned | |
@@ -447,7 +447,48 @@ Both forests use 100 trees, 40% of the rows, and 40% of the features, and scikit
 
 ## 08 - Gradient Boosting
 
-Like the random forest, the boosting models are built from the decision trees in [`06 - Decision Tree`](./06%20-%20Decision%20Tree), which they import by path, so keep the folders side by side.
+Like the random forest, the boosting models are built from the decision trees in [`06 - Decision Tree`](./06%20-%20Decision%20Tree), which they import by path, so keep the folders side by side. Both boosting models use `Decision_Tree_Regressor` trees.
+
+### Classifier
+
+**Implementation:** [`my_gradient_boosting_classifier.py`](./08%20-%20Gradient%20Boosting/my_gradient_boosting_classifier.py)
+**Walkthrough:** [`notebook_classification.ipynb`](./08%20-%20Gradient%20Boosting/notebook_classification.ipynb)
+
+#### How it works
+
+`Gradient_Boosting_Classifier` is a binary classifier that minimizes the log loss. It keeps a raw score (the log-odds) for every sample and improves it one tree at a time:
+
+1. Start every sample at the same constant raw score, the log-odds of the two classes in the training labels.
+2. Turn the raw scores into probabilities with the sigmoid, `p = 1 / (1 + e^(−score))`.
+3. Compute the residuals `y − p`, which are the negative gradient of the log loss.
+4. Fit a shallow `Decision_Tree_Regressor` (of depth `max_depth`) to the residuals. It is a regression tree because the residuals are continuous.
+5. Add the tree's prediction, scaled by `learning_rate`, to the raw scores, then recompute `p` and the residuals.
+6. Repeat for the boosting rounds.
+
+To predict, the model adds `learning_rate` times the sum of the trees' predictions to the starting score and predicts class 1 when the resulting probability is above 0.5. Each leaf holds the mean residual of its samples. The defaults are `max_depth=4`, `n_estimators=50`, and `learning_rate=0.1`, and depth is counted as in the decision tree. `predict` raises a `ValueError` if the model has not been fitted, labels must be 0 and 1, and both `fit` and `predict` expect a pandas DataFrame for `X`.
+
+#### Usage
+
+```python
+from my_gradient_boosting_classifier import Gradient_Boosting_Classifier
+
+model = Gradient_Boosting_Classifier()
+model.fit(X_train, y_train, max_depth=4, n_estimators=100, learning_rate=0.1)
+y_pred = model.predict(X_val)
+```
+
+#### Experiments
+
+**1. Synthetic data** (100 samples, 5 features, labels generated from random weights plus noise through a sigmoid), with `max_depth=2` and 100 trees. The accuracy on the training data is **0.99**.
+
+**2. Titanic (Kaggle).** The same task and preprocessing as in the logistic regression notebook, with a stratified 70/30 train/validation split (623 / 268 passengers). For the Kaggle submissions, the preprocessing pipeline is refitted on the full training set and both models are retrained on it.
+
+| Model | Validation accuracy | Kaggle score (accuracy) |
+|-------|---------------------|--------------------------|
+| Mine (`max_depth=4`, 100 estimators) | 0.7985 | 0.76076 |
+| scikit-learn `GradientBoostingClassifier` (`max_depth=5`, 100 estimators) | 0.7910 | 0.76076 |
+
+Both models use a learning rate of 0.1, and scikit-learn's `max_depth=5` is the same tree size as my `max_depth=4` (see the depth note in the decision tree section). They score the same on Kaggle, but their predictions are not identical: they disagree on 20 of the 418 test passengers, and those differences cancel out in the score.
 
 ### Regressor
 
@@ -503,6 +544,7 @@ A quick look at how my from-scratch models compare on the two main Kaggle datase
 | 3 (tie) | Decision Tree (Gini, `max_depth=2`) | 0.7985 | 0.77511 |
 | 3 (tie) | Decision Tree (entropy, `max_depth=2`) | 0.8097 | 0.77511 |
 | 6 | Logistic Regression | 0.8022 | 0.76315 |
+| 7 | Gradient Boosting (`max_depth=4`) | 0.7985 | 0.76076 |
 
 **House Prices** (regression, lower is better):
 
@@ -517,7 +559,7 @@ A quick look at how my from-scratch models compare on the two main Kaggle datase
 **What the tables show**
 
 - **The Kaggle ranking and the validation ranking differ.** On Titanic, the SVM trained with gradient descent has the best Kaggle score but the lowest validation accuracy, and logistic regression is tied for second on validation accuracy but last on Kaggle.
-- **The Titanic scores are close.** Only 12 passengers out of 418 separate first from last, so small differences are partly luck.
+- **The Titanic scores are close.** Only 13 passengers out of 418 separate first from last, so small differences are partly luck.
 - **Ensembles beat a single tree.** The random forest ranks above the decision tree on both datasets, and on House Prices gradient boosting ranks above the forest.
 - **On House Prices, linear regression wins clearly.** Both versions beat both tree models. A tree of this depth can predict at most 16 different prices, while the linear model predicts a different price for every house.
 
@@ -551,8 +593,10 @@ ML-from-Scratch/
 │   ├── my_random_forest_regressor.py    # the regressor
 │   └── notebook_regression.ipynb        # regressor experiments
 ├── 08 - Gradient Boosting/
-│   ├── my_gradient_boosting_regressor.py   # the regressor
-│   └── notebook_regression.ipynb           # regressor experiments
+│   ├── my_gradient_boosting_classifier.py   # the classifier
+│   ├── notebook_classification.ipynb        # classifier experiments
+│   ├── my_gradient_boosting_regressor.py    # the regressor
+│   └── notebook_regression.ipynb            # regressor experiments
 └── data/
     ├── house_prices/             # Kaggle data and submission files
     ├── titanic/                  # Kaggle data and submission files
