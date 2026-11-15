@@ -15,7 +15,7 @@ class Gradient_Boosting_Classifier:
 
     def fit(self, X, y, max_depth=4, n_estimators=50, learning_rate=0.1):
         class_counts = np.unique_counts(y)
-        self.initial_leaf = np.log((class_counts.counts[1] + 1e+15) / (class_counts.counts[0] + 1e+15))
+        self.initial_leaf = np.log((class_counts.counts[1] + -1.4e-13) / (class_counts.counts[0] + -1.4e-13))
 
         self.learning_rate = learning_rate
 
