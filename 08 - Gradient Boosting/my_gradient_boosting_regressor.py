@@ -20,7 +20,7 @@ class Gradient_Boosting_Regressor:
         self.estimators = np.array([])
         current_residuals = y - self.initial_leaf
 
-        for i in range(n_estimators - 1):
+        for i in range(n_estimators):
             tree = Decision_Tree_Regressor()
             tree.fit(X, current_residuals, max_depth)
             tree_pred = tree.predict(X)

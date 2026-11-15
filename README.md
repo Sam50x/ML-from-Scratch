@@ -15,7 +15,7 @@ The goal of this repo is to understand how each algorithm works under the hood: 
 | 05 | [Support Vector Machine (SVM)](./05%20-%20SVM) | Done | Synthetic data, [Titanic](https://www.kaggle.com/competitions/titanic) |
 | 06 | [Decision Tree](./06%20-%20Decision%20Tree) | Done | Synthetic data, [Titanic](https://www.kaggle.com/competitions/titanic) (classifier), [House Prices](https://www.kaggle.com/competitions/house-prices-advanced-regression-techniques/) (regressor) |
 | 07 | [Random Forest](./07%20-%20Random%20Forest) | Done | Synthetic data, [Titanic](https://www.kaggle.com/competitions/titanic) (classifier), [House Prices](https://www.kaggle.com/competitions/house-prices-advanced-regression-techniques/) (regressor) |
-| 08 | Boosting Trees | Planned | |
+| 08 | [Gradient Boosting](./08%20-%20Gradient%20Boosting) | In progress (regressor done) | Synthetic data, [House Prices](https://www.kaggle.com/competitions/house-prices-advanced-regression-techniques/) (regressor) |
 | 09 | Principal Component Analysis (PCA) | Planned | |
 | 10 | K-Means | Planned | |
 | 11 | DBSCAN | Planned | |
@@ -445,6 +445,82 @@ y_pred = model.predict(X_val)
 
 Both forests use 100 trees, 40% of the rows, and 40% of the features, and scikit-learn's `max_depth=4` is the same tree size as my `max_depth=3`. As in the classifier, the two forests use the same design but different random draws, so they are not identical. Validation RMSE is measured in dollars on the clipped `SalePrice` values. The Kaggle score is the competition's metric (RMSE on the log of the price), so lower is better.
 
+## 08 - Gradient Boosting
+
+Like the random forest, the boosting models are built from the decision trees in [`06 - Decision Tree`](./06%20-%20Decision%20Tree), which they import by path, so keep the folders side by side.
+
+### Regressor
+
+**Implementation:** [`my_gradient_boosting_regressor.py`](./08%20-%20Gradient%20Boosting/my_gradient_boosting_regressor.py)
+**Walkthrough:** [`notebook_regression.ipynb`](./08%20-%20Gradient%20Boosting/notebook_regression.ipynb)
+
+#### How it works
+
+`Gradient_Boosting_Regressor` builds the model one tree at a time, with each tree correcting the errors of the ensemble so far. It minimizes the squared error:
+
+1. Start with a constant prediction, the mean of `y`.
+2. Compute the residuals, `y − current prediction`. For the squared error, these are the negative gradient of the loss.
+3. Fit a shallow `Decision_Tree_Regressor` (of depth `max_depth`) to the residuals.
+4. Add the tree to the model, scaled by `learning_rate`, and update the residuals.
+5. Repeat for the boosting rounds.
+
+The prediction for a sample is the starting mean plus `learning_rate` times the sum of the trees' predictions. The defaults are `max_depth=4`, `n_estimators=50`, and `learning_rate=0.1`. Depth is counted as in the decision tree, so my `max_depth=k` produces the same tree size as scikit-learn's `max_depth=k+1`. `predict` raises a `ValueError` if the model has not been fitted, and both `fit` and `predict` expect a pandas DataFrame for `X`.
+
+#### Usage
+
+```python
+from my_gradient_boosting_regressor import Gradient_Boosting_Regressor
+
+model = Gradient_Boosting_Regressor()
+model.fit(X_train, y_train, max_depth=4, n_estimators=50, learning_rate=0.1)
+y_pred = model.predict(X_val)
+```
+
+#### Experiments
+
+**1. Synthetic data** (10 samples, 5 features, targets generated from random weights plus noise), with the default settings. The MSE on the training data is about **0.00005**, because the ensemble fits the 10 points almost exactly.
+
+**2. House Prices (Kaggle).** The same task, cleaning, preprocessing, and train/validation split as in the decision tree regressor notebook (1,022 / 438 houses). For the Kaggle submissions, the preprocessing pipeline is refitted on the full training set and both models are retrained on it.
+
+| Model | Validation RMSE | Kaggle score (RMSE) |
+|-------|-----------------|---------------------|
+| Mine (`max_depth=4`, 50 estimators) | 16,324.49 | 0.19305 |
+| scikit-learn `GradientBoostingRegressor` (`max_depth=5`, 50 estimators) | 16,086.96 | 0.19286 |
+
+Both models use a learning rate of 0.1, and scikit-learn's `max_depth=5` is the same tree size as my `max_depth=4`. On the test set, their predictions differ by about $436 per house on average. Validation RMSE is measured in dollars on the clipped `SalePrice` values. The Kaggle score is the competition's metric (RMSE on the log of the price), so lower is better.
+
+## Model comparison
+
+A quick look at how my from-scratch models compare on the two main Kaggle datasets, ranked by Kaggle score (best first). Within each table the models use the same cleaning, preprocessing, and train/validation split, so the numbers are directly comparable. KNN (Iris) and Naive Bayes (Disaster Tweets) each use their own dataset, so they are not included.
+
+**Titanic** (classification, higher is better):
+
+| Rank | Model | Validation accuracy | Kaggle score (accuracy) |
+|------|-------|---------------------|--------------------------|
+| 1 | SVM (gradient descent) | 0.7276 | 0.79186 |
+| 2 | Random Forest (`max_depth=2`) | 0.8022 | 0.78229 |
+| 3 (tie) | SVM (dual problem) | 0.7761 | 0.77511 |
+| 3 (tie) | Decision Tree (Gini, `max_depth=2`) | 0.7985 | 0.77511 |
+| 3 (tie) | Decision Tree (entropy, `max_depth=2`) | 0.8097 | 0.77511 |
+| 6 | Logistic Regression | 0.8022 | 0.76315 |
+
+**House Prices** (regression, lower is better):
+
+| Rank | Model | Validation RMSE | Kaggle score (RMSE) |
+|------|-------|-----------------|---------------------|
+| 1 | Linear Regression (gradient descent) | 18,412.13 | 0.16219 |
+| 2 | Linear Regression (normal equation) | 18,884.06 | 0.16664 |
+| 3 | Gradient Boosting (`max_depth=4`) | 16,324.49 | 0.19305 |
+| 4 | Random Forest (`max_depth=3`) | 19,634.59 | 0.22817 |
+| 5 | Decision Tree (`max_depth=3`) | 24,940.43 | 0.24192 |
+
+**What the tables show**
+
+- **The Kaggle ranking and the validation ranking differ.** On Titanic, the SVM trained with gradient descent has the best Kaggle score but the lowest validation accuracy, and logistic regression is tied for second on validation accuracy but last on Kaggle.
+- **The Titanic scores are close.** Only 12 passengers out of 418 separate first from last, so small differences are partly luck.
+- **Ensembles beat a single tree.** The random forest ranks above the decision tree on both datasets, and on House Prices gradient boosting ranks above the forest.
+- **On House Prices, linear regression wins clearly.** Both versions beat both tree models. A tree of this depth can predict at most 16 different prices, while the linear model predicts a different price for every house.
+
 ## Repo structure
 
 ```
@@ -474,6 +550,9 @@ ML-from-Scratch/
 │   ├── notebook_classification.ipynb    # classifier experiments
 │   ├── my_random_forest_regressor.py    # the regressor
 │   └── notebook_regression.ipynb        # regressor experiments
+├── 08 - Gradient Boosting/
+│   ├── my_gradient_boosting_regressor.py   # the regressor
+│   └── notebook_regression.ipynb           # regressor experiments
 └── data/
     ├── house_prices/             # Kaggle data and submission files
     ├── titanic/                  # Kaggle data and submission files
