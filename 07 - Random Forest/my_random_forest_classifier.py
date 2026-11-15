@@ -3,10 +3,6 @@ import numpy as np
 import sys
 sys.path.append('../06 - Decision Tree')
 
-import importlib
-import my_decision_tree_classifier
-
-importlib.reload(my_decision_tree_classifier)
 from my_decision_tree_classifier import Decision_Tree_Classifier
 
 class Random_Forest_Classifier:

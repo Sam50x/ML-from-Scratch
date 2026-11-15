@@ -3,10 +3,6 @@ import numpy as np
 import sys
 sys.path.append('../06 - Decision Tree')
 
-import importlib
-import my_decision_tree_regressor
-
-importlib.reload(my_decision_tree_regressor)
 from my_decision_tree_regressor import Decision_Tree_Regressor
 
 class Random_Forest_Regressor:
