@@ -23,6 +23,8 @@ The goal of this repo is to understand how each algorithm works under the hood: 
 | 13 | Stacking | Planned | |
 | 14 | Projects | Planned | |
 
+**Common interface.** All the models follow the same pattern: the hyperparameters are set in the constructor, and `fit(X, y)` and `predict(X)` take only the data. This keeps the models easy to swap and to combine, for example in the stacking model.
+
 ## 01 - Linear Regression
 
 **Implementation:** [`my_linear_regression.py`](./01%20-%20Linear%20Regression/my_linear_regression.py)
@@ -48,8 +50,8 @@ model.fit(X_train, y_train)
 y_pred = model.predict(X_val)
 
 # Gradient descent
-model = Linear_Regression(mode='gradient_descent')
-model.fit(X_train, y_train, epochs=1000, learning_rate=0.01)
+model = Linear_Regression(mode='gradient_descent', epochs=1000, learning_rate=0.01)
+model.fit(X_train, y_train)
 y_pred = model.predict(X_val)
 ```
 
@@ -98,8 +100,8 @@ The `Logistic_Regression` class is a binary classifier trained with gradient des
 ```python
 from my_logistic_regression import Logistic_Regression
 
-model = Logistic_Regression()
-model.fit(X_train, y_train, epochs=1000, learning_rate=0.1)
+model = Logistic_Regression(epochs=1000, learning_rate=0.1)
+model.fit(X_train, y_train)
 
 proba = model.predict_proba(X_val)
 y_pred = model.predict(X_val, threshold=0.5)
@@ -198,8 +200,8 @@ vectorizer = CountVectorizer()
 X_train = vectorizer.fit_transform(train_texts)
 X_train = pd.DataFrame(X_train.toarray(), columns=vectorizer.get_feature_names_out())
 
-model = Naive_Bayes()
-model.fit(X_train, y_train, alpha=1)
+model = Naive_Bayes(alpha=1)
+model.fit(X_train, y_train)
 
 X_val = pd.DataFrame(vectorizer.transform(val_texts).toarray(), columns=vectorizer.get_feature_names_out())
 y_pred = model.predict(X_val)
@@ -244,13 +246,13 @@ Both modes solve the same soft-margin problem, `minimize ½‖w‖² + C Σ max(
 from my_svm import SVM
 
 # Dual problem
-model = SVM(mode='dual_problem')
-model.fit(X_train, y_train, C=1.0)
+model = SVM(mode='dual_problem', C=1.0)
+model.fit(X_train, y_train)
 y_pred = model.predict(X_val)
 
 # Gradient descent
-model = SVM(mode='gradient_descent')
-model.fit(X_train, y_train, epochs=1000, learning_rate=0.01, regularization_rate=0.01)
+model = SVM(mode='gradient_descent', epochs=1000, learning_rate=0.01, regularization_rate=0.01)
+model.fit(X_train, y_train)
 y_pred = model.predict(X_val)
 ```
 
@@ -295,15 +297,13 @@ The dual problem is solved with a general-purpose optimizer, so training time gr
 
 **Depth.** The root is at depth 0 and nodes at depth `max_depth` can still be split once, so my `max_depth=k` produces the same tree as scikit-learn's `max_depth=k+1`. `max_depth=None` (or 0) means no limit.
 
-**Random forest support.** `fit` also accepts `frac_features` and `random_state`. With `frac_features` set (default `None`), each node searches for its split among a random subset of that fraction of the columns, drawn without replacement, instead of all of them. The children still receive all the columns, and `random_state` seeds the random draws. The random forest uses this.
-
 #### Usage
 
 ```python
 from my_decision_tree_classifier import Decision_Tree_Classifier
 
-model = Decision_Tree_Classifier(mode='gini')
-model.fit(X_train, y_train, max_depth=2)
+model = Decision_Tree_Classifier(mode='gini', max_depth=2)
+model.fit(X_train, y_train)
 y_pred = model.predict(X_val)
 ```
 
@@ -343,15 +343,15 @@ Scikit-learn's `max_depth=3` is the same tree size as my `max_depth=2` (see the 
 
 **Prediction.** Each sample walks down the tree (left if `feature <= threshold`, right otherwise) and gets the mean of the leaf it ends up in. `predict` raises a `ValueError` if the model has not been fitted, and both `fit` and `predict` expect a pandas DataFrame for `X`.
 
-**Depth.** Depth is counted in the same way as in the classifier, so my `max_depth=k` produces the same tree size as scikit-learn's `max_depth=k+1`, and `max_depth=None` (or 0) means no limit. Like the classifier, `fit` also accepts `frac_features` and `random_state` for use by the random forest.
+**Depth.** Depth is counted in the same way as in the classifier, so my `max_depth=k` produces the same tree size as scikit-learn's `max_depth=k+1`, and `max_depth=None` (or 0) means no limit.
 
 #### Usage
 
 ```python
 from my_decision_tree_regressor import Decision_Tree_Regressor
 
-model = Decision_Tree_Regressor()
-model.fit(X_train, y_train, max_depth=3)
+model = Decision_Tree_Regressor(max_depth=3)
+model.fit(X_train, y_train)
 y_pred = model.predict(X_val)
 ```
 
@@ -395,8 +395,8 @@ Both forests are built from the decision trees in [`06 - Decision Tree`](./06%20
 ```python
 from my_random_forest_classifier import Random_Forest_Classifier
 
-model = Random_Forest_Classifier()
-model.fit(X_train, y_train, max_depth=2, n_estimators=100, frac_instances=0.8, frac_features=0.8)
+model = Random_Forest_Classifier(max_depth=2, n_estimators=100, frac_instances=0.8, frac_features=0.8)
+model.fit(X_train, y_train)
 y_pred = model.predict(X_val)
 ```
 
@@ -420,15 +420,15 @@ Both forests use 100 trees, 80% of the rows, and 80% of the features, and scikit
 
 #### How it works
 
-`Random_Forest_Regressor` works in the same way as the classifier, with `Decision_Tree_Regressor` trees, and the forest's prediction is the average of the trees' predictions. It has the same `fit` arguments (`max_depth`, `n_estimators`, `frac_instances`, `frac_features`) and raises a `ValueError` if `predict` is called before `fit`.
+`Random_Forest_Regressor` works in the same way as the classifier, with `Decision_Tree_Regressor` trees, and the forest's prediction is the average of the trees' predictions. It takes the same constructor arguments (`max_depth`, `n_estimators`, `frac_instances`, `frac_features`) and raises a `ValueError` if `predict` is called before `fit`.
 
 #### Usage
 
 ```python
 from my_random_forest_regressor import Random_Forest_Regressor
 
-model = Random_Forest_Regressor()
-model.fit(X_train, y_train, max_depth=3, n_estimators=100, frac_instances=0.4, frac_features=0.4)
+model = Random_Forest_Regressor(max_depth=3, n_estimators=100, frac_instances=0.4, frac_features=0.4)
+model.fit(X_train, y_train)
 y_pred = model.predict(X_val)
 ```
 
@@ -472,8 +472,8 @@ To predict, the model adds `learning_rate` times the sum of the trees' predictio
 ```python
 from my_gradient_boosting_classifier import Gradient_Boosting_Classifier
 
-model = Gradient_Boosting_Classifier()
-model.fit(X_train, y_train, max_depth=4, n_estimators=100, learning_rate=0.1)
+model = Gradient_Boosting_Classifier(max_depth=4, n_estimators=100, learning_rate=0.1)
+model.fit(X_train, y_train)
 y_pred = model.predict(X_val)
 ```
 
@@ -485,10 +485,10 @@ y_pred = model.predict(X_val)
 
 | Model | Validation accuracy | Kaggle score (accuracy) |
 |-------|---------------------|--------------------------|
-| Mine (`max_depth=4`, 100 estimators) | 0.7985 | 0.76076 |
-| scikit-learn `GradientBoostingClassifier` (`max_depth=5`, 100 estimators) | 0.7910 | 0.76076 |
+| Mine (`max_depth=4`, 50 estimators) | 0.7985 | 0.78229 |
+| scikit-learn `GradientBoostingClassifier` (`max_depth=5`, 50 estimators) | 0.7985 | 0.76794 |
 
-Both models use a learning rate of 0.1, and scikit-learn's `max_depth=5` is the same tree size as my `max_depth=4` (see the depth note in the decision tree section). They score the same on Kaggle, but their predictions are not identical: they disagree on 20 of the 418 test passengers, and those differences cancel out in the score.
+Both models use a learning rate of 0.1, and scikit-learn's `max_depth=5` is the same tree size as my `max_depth=4` (see the depth note in the decision tree section). Both models use 50 estimators. On the test set, the two models disagree on 22 of the 418 passengers.
 
 ### Regressor
 
@@ -512,8 +512,8 @@ The prediction for a sample is the starting mean plus `learning_rate` times the 
 ```python
 from my_gradient_boosting_regressor import Gradient_Boosting_Regressor
 
-model = Gradient_Boosting_Regressor()
-model.fit(X_train, y_train, max_depth=4, n_estimators=50, learning_rate=0.1)
+model = Gradient_Boosting_Regressor(max_depth=4, n_estimators=50, learning_rate=0.1)
+model.fit(X_train, y_train)
 y_pred = model.predict(X_val)
 ```
 
@@ -539,12 +539,12 @@ A quick look at how my from-scratch models compare on the two main Kaggle datase
 | Rank | Model | Validation accuracy | Kaggle score (accuracy) |
 |------|-------|---------------------|--------------------------|
 | 1 | SVM (gradient descent) | 0.7276 | 0.79186 |
-| 2 | Random Forest (`max_depth=2`) | 0.8022 | 0.78229 |
-| 3 (tie) | SVM (dual problem) | 0.7761 | 0.77511 |
-| 3 (tie) | Decision Tree (Gini, `max_depth=2`) | 0.7985 | 0.77511 |
-| 3 (tie) | Decision Tree (entropy, `max_depth=2`) | 0.8097 | 0.77511 |
-| 6 | Logistic Regression | 0.8022 | 0.76315 |
-| 7 | Gradient Boosting (`max_depth=4`) | 0.7985 | 0.76076 |
+| 2 (tie) | Random Forest (`max_depth=2`) | 0.8022 | 0.78229 |
+| 2 (tie) | Gradient Boosting (`max_depth=4`) | 0.7985 | 0.78229 |
+| 4 (tie) | SVM (dual problem) | 0.7761 | 0.77511 |
+| 4 (tie) | Decision Tree (Gini, `max_depth=2`) | 0.7985 | 0.77511 |
+| 4 (tie) | Decision Tree (entropy, `max_depth=2`) | 0.8097 | 0.77511 |
+| 7 | Logistic Regression | 0.8022 | 0.76315 |
 
 **House Prices** (regression, lower is better):
 
@@ -559,7 +559,7 @@ A quick look at how my from-scratch models compare on the two main Kaggle datase
 **What the tables show**
 
 - **The Kaggle ranking and the validation ranking differ.** On Titanic, the SVM trained with gradient descent has the best Kaggle score but the lowest validation accuracy, and logistic regression is tied for second on validation accuracy but last on Kaggle.
-- **The Titanic scores are close.** Only 13 passengers out of 418 separate first from last, so small differences are partly luck.
+- **The Titanic scores are close.** Only 12 passengers out of 418 separate first from last, so small differences are partly luck.
 - **Ensembles beat a single tree.** The random forest ranks above the decision tree on both datasets, and on House Prices gradient boosting ranks above the forest.
 - **On House Prices, linear regression wins clearly.** Both versions beat both tree models. A tree of this depth can predict at most 16 different prices, while the linear model predicts a different price for every house.
 
