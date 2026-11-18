@@ -4,29 +4,30 @@ Core machine learning algorithms implemented from scratch with NumPy and compare
 
 ## Models
 
-| # | Model | Status | Data |
-|---|-------|--------|------|
-| 01 | [Linear Regression](./01%20-%20Linear%20Regression) | Done | Synthetic data, [House Prices](https://www.kaggle.com/competitions/house-prices-advanced-regression-techniques/) |
-| 02 | [Logistic Regression](./02%20-%20Logistic%20Regression) | Done | Synthetic data, [Titanic](https://www.kaggle.com/competitions/titanic) |
-| 03 | [K-Nearest Neighbors (KNN)](./03%20-%20KNN) | Done | Synthetic data, [Iris](https://www.kaggle.com/competitions/iris-classification-challenge) |
-| 04 | [Naive Bayes](./04%20-%20Naive%20Bayes) | Done | Synthetic data, [Disaster Tweets](https://www.kaggle.com/competitions/nlp-getting-started) |
-| 05 | [Support Vector Machine (SVM)](./05%20-%20SVM) | Done | Synthetic data, [Titanic](https://www.kaggle.com/competitions/titanic) |
-| 06 | [Decision Tree](./06%20-%20Decision%20Tree) | Done | Synthetic data, [Titanic](https://www.kaggle.com/competitions/titanic) (classifier), [House Prices](https://www.kaggle.com/competitions/house-prices-advanced-regression-techniques/) (regressor) |
-| 07 | [Random Forest](./07%20-%20Random%20Forest) | Done | Synthetic data, [Titanic](https://www.kaggle.com/competitions/titanic) (classifier), [House Prices](https://www.kaggle.com/competitions/house-prices-advanced-regression-techniques/) (regressor) |
-| 08 | [Gradient Boosting](./08%20-%20Gradient%20Boosting) | Done | Synthetic data, [Titanic](https://www.kaggle.com/competitions/titanic) (classifier), [House Prices](https://www.kaggle.com/competitions/house-prices-advanced-regression-techniques/) (regressor) |
-| 09 | Principal Component Analysis (PCA) | Planned | |
-| 10 | K-Means | Planned | |
-| 11 | DBSCAN | Planned | |
-| 12 | Gaussian Mixture Model (GMM) | Planned | |
-| 13 | Stacking | Planned | |
-| 14 | Projects | Planned | One end-to-end project for each task: classification, regression, and clustering |
+| #  | Model                                      | Status  | Data |
+|----|--------------------------------------------|---------|------|
+| 01 | [Linear Regression](./01%20-%20Linear%20Regression) | Done    | Synthetic data, [House Prices](https://www.kaggle.com/competitions/house-prices-advanced-regression-techniques/) |
+| 02 | [Logistic Regression](./02%20-%20Logistic%20Regression) | Done    | Synthetic data, [Titanic](https://www.kaggle.com/competitions/titanic) |
+| 03 | [K-Nearest Neighbors (KNN)](./03%20-%20KNN) | Done    | Synthetic data, [Iris](https://www.kaggle.com/competitions/iris-classification-challenge) |
+| 04 | [Naive Bayes](./04%20-%20Naive%20Bayes)     | Done    | Synthetic data, [Disaster Tweets](https://www.kaggle.com/competitions/nlp-getting-started) |
+| 05 | [Support Vector Machine (SVM)](./05%20-%20SVM) | Done    | Synthetic data, [Titanic](https://www.kaggle.com/competitions/titanic) |
+| 06 | [Decision Tree](./06%20-%20Decision%20Tree) | Done    | Synthetic data, [Titanic](https://www.kaggle.com/competitions/titanic) (classifier), [House Prices](https://www.kaggle.com/competitions/house-prices-advanced-regression-techniques/) (regressor) |
+| 07 | [Random Forest](./07%20-%20Random%20Forest) | Done    | Synthetic data, [Titanic](https://www.kaggle.com/competitions/titanic) (classifier), [House Prices](https://www.kaggle.com/competitions/house-prices-advanced-regression-techniques/) (regressor) |
+| 08 | [Gradient Boosting](./08%20-%20Gradient%20Boosting) | Done    | Synthetic data, [Titanic](https://www.kaggle.com/competitions/titanic) (classifier), [House Prices](https://www.kaggle.com/competitions/house-prices-advanced-regression-techniques/) (regressor) |
+| 09 | [Principal Component Analysis (PCA)](./09%20-%20PCA) | Done    | Synthetic data, House Prices + Titanic (as preprocessing) |
+| 10 | K-Means                                    | Planned | |
+| 11 | DBSCAN                                     | Planned | |
+| 12 | Gaussian Mixture Model (GMM)               | Planned | |
+| 13 | Stacking                                   | Planned | |
+| 14 | Projects                                   | Planned | One end-to-end project for each task: classification, regression, and clustering |
 
-All models share one interface: hyperparameters go in the constructor, and `fit(X, y)` and `predict(X)` take only the data.
+All models share one interface: hyperparameters go in the constructor, and `fit(X, y)` / `predict(X)` (or `transform(X)` for PCA) take only the data.
 
 ## Experiment setup
 
 - **Titanic:** stratified 70/30 split (623 / 268 passengers), with `FamilySize` and `IsAlone` features, median imputation and scaling for numeric columns, one-hot `Embarked`, and ordinal `Sex`.
 - **House Prices:** 70/30 split (1,022 / 438 houses). Outliers in the highest-variance columns (`SalePrice` included) are clipped to the 10th and 90th percentiles, and columns that are mostly missing, mostly zero, or highly correlated are dropped. Numeric columns are imputed and scaled, and categorical ones are one-hot encoded.
+- **Preprocessed data:** Notebooks now load preprocessed CSVs from `data/<dataset>/preprocessed/` (full training set, test set, and targets) so the same cleaned features are reused across models.
 - **Kaggle submissions:** the preprocessing is refitted on the full training set and the models are retrained on it.
 - **scikit-learn baselines** use matching settings. Tree depth starts at 0 at the root, so my `max_depth=k` equals scikit-learn's `max_depth=k+1`, and the tables list scikit-learn's own value.
 - **Metrics:** House Prices validation RMSE is in dollars on the clipped `SalePrice`, and the Kaggle score is RMSE on the log of the price. Lower is better.
@@ -241,6 +242,36 @@ The two models disagree on 22 of the 418 test passengers.
 
 Their test predictions differ by about $327 per house on average.
 
+## 09 - Principal Component Analysis (PCA)
+
+[`my_pca.py`](./09%20-%20PCA/my_pca.py) · [`notebook.ipynb`](./09%20-%20PCA/notebook.ipynb)
+
+Dimensionality reduction via SVD of the centered data matrix. Returns the principal components (`transform`) and the cumulative explained variance ratio. `n_components=None` keeps all components.
+
+```python
+from my_pca import PCA
+
+pca = PCA(n_components=3)
+X_reduced = pca.fit_transform(X)
+# or
+pca.fit(X)
+X_reduced = pca.transform(X)
+```
+
+**Synthetic data** (1000 samples, 5 features generated from 3 latent factors + noise): the first 3 components explain >99.9% of the variance.
+
+**House Prices** (used as preprocessing before Linear Regression):
+
+- 93 components retain ≈98% of the variance (out of 176 features).
+- Linear Regression after PCA → **Kaggle RMSE 0.15865** (improved from 0.16664 without PCA, and faster).
+
+**Titanic** (used as preprocessing before Logistic Regression):
+
+- 8 components retain ≈98% of the variance (out of 11 features).
+- Logistic Regression after PCA → **Kaggle accuracy 0.76315** (same score, faster training).
+
+The implementation matches scikit-learn’s `PCA` on the cumulative explained variance curves.
+
 ## Model comparison
 
 All my models, ranked by Kaggle score (best first). Within each table the models use the same preprocessing and split. KNN (Iris) and Naive Bayes (Disaster Tweets) use their own datasets, so they are not included.
@@ -261,17 +292,18 @@ All my models, ranked by Kaggle score (best first). Within each table the models
 
 | Rank | Model | Validation RMSE | Kaggle score (RMSE) |
 |------|-------|-----------------|---------------------|
-| 1 | Linear Regression (gradient descent) | 18,412.13 | 0.16219 |
-| 2 | Linear Regression (normal equation) | 18,884.06 | 0.16664 |
-| 3 | Gradient Boosting (`max_depth=4`) | 16,303.76 | 0.19286 |
-| 4 | Random Forest (`max_depth=3`) | 19,634.59 | 0.22817 |
-| 5 | Decision Tree (`max_depth=3`) | 24,940.43 | 0.24192 |
+| 1 | Linear Regression + PCA (93 comps) | — | **0.15865** |
+| 2 | Linear Regression (gradient descent) | 18,412.13 | 0.16219 |
+| 3 | Linear Regression (normal equation) | 18,884.06 | 0.16664 |
+| 4 | Gradient Boosting (`max_depth=4`) | 16,303.76 | 0.19286 |
+| 5 | Random Forest (`max_depth=3`) | 19,634.59 | 0.22817 |
+| 6 | Decision Tree (`max_depth=3`) | 24,940.43 | 0.24192 |
 
-On Titanic only 12 passengers out of 418 separate first from last, so small differences are partly luck. The ensembles beat a single tree on both datasets, and linear regression wins on House Prices.
+On Titanic only 12 passengers out of 418 separate first from last, so small differences are partly luck. The ensembles beat a single tree on both datasets, and linear regression (especially after PCA) wins on House Prices.
 
 ## Running the notebooks
 
-Each notebook reads data from `../data` and imports models by path, so run it from its own folder inside a full clone of the repo. On Colab, run this first (change the folder name to match):
+Each notebook reads data from `../data` (now preferring the `preprocessed/` subfolder) and imports models by path, so run it from its own folder inside a full clone of the repo. On Colab, run this first (change the folder name to match):
 
 ```python
 !git clone -q https://github.com/Sam50x/ML-from-Scratch.git
@@ -293,6 +325,7 @@ Colab may need `!pip install -U numpy` and a runtime restart, because the code n
 | Random Forest (regressor) | [`07 - Random Forest/notebook_regression.ipynb`](./07%20-%20Random%20Forest/notebook_regression.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Sam50x/ML-from-Scratch/blob/main/07%20-%20Random%20Forest/notebook_regression.ipynb) |
 | Gradient Boosting (classifier) | [`08 - Gradient Boosting/notebook_classification.ipynb`](./08%20-%20Gradient%20Boosting/notebook_classification.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Sam50x/ML-from-Scratch/blob/main/08%20-%20Gradient%20Boosting/notebook_classification.ipynb) |
 | Gradient Boosting (regressor) | [`08 - Gradient Boosting/notebook_regression.ipynb`](./08%20-%20Gradient%20Boosting/notebook_regression.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Sam50x/ML-from-Scratch/blob/main/08%20-%20Gradient%20Boosting/notebook_regression.ipynb) |
+| PCA | [`09 - PCA/notebook.ipynb`](./09%20-%20PCA/notebook.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Sam50x/ML-from-Scratch/blob/main/09%20-%20PCA/notebook.ipynb) |
 
 ## Repo structure
 
@@ -302,40 +335,47 @@ ML-from-Scratch/
 ├── requirements.txt
 ├── .gitignore
 ├── 01 - Linear Regression/
-│   ├── my_linear_regression.py   # the model
-│   └── notebook.ipynb            # experiments
+│   ├── my_linear_regression.py
+│   └── notebook.ipynb
 ├── 02 - Logistic Regression/
-│   ├── my_logistic_regression.py # the model
-│   └── notebook.ipynb            # experiments
+│   ├── my_logistic_regression.py
+│   └── notebook.ipynb
 ├── 03 - KNN/
-│   ├── my_knn.py                 # the model
-│   └── notebook.ipynb            # experiments
+│   ├── my_knn.py
+│   └── notebook.ipynb
 ├── 04 - Naive Bayes/
-│   ├── my_naive_bayes.py         # the model
-│   └── notebook.ipynb            # experiments
+│   ├── my_naive_bayes.py
+│   └── notebook.ipynb
 ├── 05 - SVM/
-│   ├── my_svm.py                 # the model
-│   └── notebook.ipynb            # experiments
+│   ├── my_svm.py
+│   └── notebook.ipynb
 ├── 06 - Decision Tree/
-│   ├── my_decision_tree_classifier.py   # the classifier
-│   ├── notebook_classification.ipynb    # classifier experiments
-│   ├── my_decision_tree_regressor.py    # the regressor
-│   └── notebook_regression.ipynb        # regressor experiments
+│   ├── my_decision_tree_classifier.py
+│   ├── notebook_classification.ipynb
+│   ├── my_decision_tree_regressor.py
+│   └── notebook_regression.ipynb
 ├── 07 - Random Forest/
-│   ├── my_random_forest_classifier.py   # the classifier
-│   ├── notebook_classification.ipynb    # classifier experiments
-│   ├── my_random_forest_regressor.py    # the regressor
-│   └── notebook_regression.ipynb        # regressor experiments
+│   ├── my_random_forest_classifier.py
+│   ├── notebook_classification.ipynb
+│   ├── my_random_forest_regressor.py
+│   └── notebook_regression.ipynb
 ├── 08 - Gradient Boosting/
-│   ├── my_gradient_boosting_classifier.py   # the classifier
-│   ├── notebook_classification.ipynb        # classifier experiments
-│   ├── my_gradient_boosting_regressor.py    # the regressor
-│   └── notebook_regression.ipynb            # regressor experiments
+│   ├── my_gradient_boosting_classifier.py
+│   ├── notebook_classification.ipynb
+│   ├── my_gradient_boosting_regressor.py
+│   └── notebook_regression.ipynb
+├── 09 - PCA/
+│   ├── my_pca.py
+│   └── notebook.ipynb
 └── data/
-    ├── house_prices/             # Kaggle data and submission files
-    ├── titanic/                  # Kaggle data and submission files
-    ├── iris/                     # Kaggle data and submission files
-    └── disaster_tweets/          # Kaggle data and submission files
+    ├── house_prices/
+    │   ├── preprocessed/          # full.csv, test.csv, y_full.csv
+    │   └── submissions/
+    ├── titanic/
+    │   ├── preprocessed/
+    │   └── submissions/
+    ├── iris/
+    └── disaster_tweets/
 ```
 
 ## Requirements
