@@ -1,8 +1,6 @@
 # ML from Scratch
 
-Core machine learning algorithms implemented from scratch with NumPy, then compared against their scikit-learn counterparts on real data.
-
-The goal of this repo is to understand how each algorithm works under the hood: every model lives in its own folder with a clean implementation and a notebook that tests it on synthetic data and on a real Kaggle dataset.
+Core machine learning algorithms implemented from scratch with NumPy and compared against their scikit-learn counterparts on Kaggle datasets.
 
 ## Models
 
@@ -21,128 +19,68 @@ The goal of this repo is to understand how each algorithm works under the hood: 
 | 11 | DBSCAN | Planned | |
 | 12 | Gaussian Mixture Model (GMM) | Planned | |
 | 13 | Stacking | Planned | |
-| 14 | Projects | Planned | |
+| 14 | Projects | Planned | One end-to-end project for each task: classification, regression, and clustering |
 
-**Common interface.** All the models follow the same pattern: the hyperparameters are set in the constructor, and `fit(X, y)` and `predict(X)` take only the data. This keeps the models easy to swap and to combine, for example in the stacking model.
+All models share one interface: hyperparameters go in the constructor, and `fit(X, y)` and `predict(X)` take only the data.
+
+## Experiment setup
+
+- **Titanic:** stratified 70/30 split (623 / 268 passengers), with `FamilySize` and `IsAlone` features, median imputation and scaling for numeric columns, one-hot `Embarked`, and ordinal `Sex`.
+- **House Prices:** 70/30 split (1,022 / 438 houses). Outliers in the highest-variance columns (`SalePrice` included) are clipped to the 10th and 90th percentiles, and columns that are mostly missing, mostly zero, or highly correlated are dropped. Numeric columns are imputed and scaled, and categorical ones are one-hot encoded.
+- **Kaggle submissions:** the preprocessing is refitted on the full training set and the models are retrained on it.
+- **scikit-learn baselines** use matching settings. Tree depth starts at 0 at the root, so my `max_depth=k` equals scikit-learn's `max_depth=k+1`, and the tables list scikit-learn's own value.
+- **Metrics:** House Prices validation RMSE is in dollars on the clipped `SalePrice`, and the Kaggle score is RMSE on the log of the price. Lower is better.
 
 ## 01 - Linear Regression
 
-**Implementation:** [`my_linear_regression.py`](./01%20-%20Linear%20Regression/my_linear_regression.py)
-**Walkthrough:** [`notebook.ipynb`](./01%20-%20Linear%20Regression/notebook.ipynb)
+[`my_linear_regression.py`](./01%20-%20Linear%20Regression/my_linear_regression.py) · [`notebook.ipynb`](./01%20-%20Linear%20Regression/notebook.ipynb)
 
-### How it works
-
-The `Linear_Regression` class fits a linear model by minimizing the mean squared error, `L = (1/m) Σ (ŷ − y)²`, with no regularization. It supports two ways of doing so, chosen with the `mode` argument:
-
-- **`normal_equation`** (default): solves for the weights in closed form, `θ = (XᵀX)⁻¹ Xᵀy`, after adding a column of ones for the intercept. This requires `XᵀX` to be invertible.
-- **`gradient_descent`**: starts from random weights and minimizes the MSE loss iteratively, using the gradients `∂L/∂w = (2/m) Xᵀ(ŷ − y)` and `∂L/∂b = (2/m) Σ(ŷ − y)`. Defaults: `epochs=1000`, `learning_rate=0.01`.
-
-After fitting, the learned parameters are available as `weights_` and `intercept_`. Calling `predict` before `fit` raises a `ValueError`.
-
-### Usage
+Minimizes the mean squared error, with no regularization, using either the closed-form normal equation (`mode='normal_equation'`, the default) or gradient descent (`mode='gradient_descent'`, `epochs=1000`, `learning_rate=0.01`).
 
 ```python
 from my_linear_regression import Linear_Regression
 
-# Closed-form solution
-model = Linear_Regression(mode='normal_equation')
-model.fit(X_train, y_train)
-y_pred = model.predict(X_val)
-
-# Gradient descent
 model = Linear_Regression(mode='gradient_descent', epochs=1000, learning_rate=0.01)
 model.fit(X_train, y_train)
 y_pred = model.predict(X_val)
 ```
 
-### Experiments
-
-**1. Synthetic data** (10 samples, 5 features, standard-normal inputs and weights, an intercept of 5, and standard-normal noise). Both solvers reach essentially the same MSE, which is close to the variance of the noise added to the data:
-
-| Method | MSE |
-|--------|-----|
-| Normal Equation | 0.3750 |
-| Gradient Descent | 0.3754 |
-
-**2. House Prices (Kaggle).** The notebook walks through:
-
-- **EDA:** summary statistics, missing values, columns that are mostly zeros, and a correlation heatmap.
-- **Cleaning:** outliers in the highest-variance numeric columns (including `SalePrice`) are clipped to the 10th and 90th percentiles. Columns with more than 50% missing values, more than 50% zeros, or high correlation with other features are dropped.
-- **Preprocessing:** a scikit-learn `ColumnTransformer` that imputes (median / most frequent), standardizes numeric features, and one-hot encodes categorical ones.
-- **Training and evaluation:** a 70/30 train/validation split, comparing my two solvers against scikit-learn's `LinearRegression`. For the Kaggle submissions, the preprocessing pipeline is refitted on the full training set and each model is retrained on it.
+Synthetic data (10 samples): MSE 0.3750 with the normal equation and 0.3754 with gradient descent. House Prices:
 
 | Model | Validation RMSE | Kaggle score (RMSE) |
-|-------|-----------------|--------------|
+|-------|-----------------|---------------------|
 | Mine (Normal Equation) | 18,884.06 | 0.16664 |
 | Mine (Gradient Descent) | 18,412.13 | 0.16219 |
 | scikit-learn `LinearRegression` | 18,884.06 | 0.16664 |
 
-Validation RMSE is measured in dollars on the clipped `SalePrice` values. The Kaggle score is the competition's metric (RMSE on the log of the price), so lower is better.
-
-My normal equation implementation matches scikit-learn's results (the validation RMSEs differ by less than 0.000000001), which confirms that it is correct. Gradient descent scores slightly better on both the validation set and Kaggle, likely because it never fits the training data as tightly as the closed-form solution does.
-
 ## 02 - Logistic Regression
 
-**Implementation:** [`my_logistic_regression.py`](./02%20-%20Logistic%20Regression/my_logistic_regression.py)
-**Walkthrough:** [`notebook.ipynb`](./02%20-%20Logistic%20Regression/notebook.ipynb)
+[`my_logistic_regression.py`](./02%20-%20Logistic%20Regression/my_logistic_regression.py) · [`notebook.ipynb`](./02%20-%20Logistic%20Regression/notebook.ipynb)
 
-### How it works
-
-The `Logistic_Regression` class is a binary classifier trained with gradient descent on the log loss (binary cross-entropy), `L = −(1/m) Σ [y·log(p) + (1 − y)·log(1 − p)]`, with no regularization:
-
-- **Model:** a linear combination of the features is passed through the sigmoid function, `p = 1 / (1 + e^(−(Xw + b)))`, which gives the probability of class 1.
-- **Training:** weights and bias start from random normal values and are updated for a fixed number of epochs using the gradients `∂L/∂w = (1/m) Xᵀ(p − y)` and `∂L/∂b = (1/m) Σ(p − y)`. Defaults: `epochs=1000`, `learning_rate=0.1`.
-- **Fitted parameters:** available as `weights_` and `bias_` after training.
-- **Prediction:** `predict_proba` returns the probabilities, and `predict` turns them into 0/1 labels using a `threshold` (default `0.5`). Both raise a `ValueError` if the model has not been fitted.
-
-### Usage
+Binary classifier trained with gradient descent on the log loss, with no regularization (`epochs=1000`, `learning_rate=0.1`). It also provides `predict_proba`.
 
 ```python
 from my_logistic_regression import Logistic_Regression
 
 model = Logistic_Regression(epochs=1000, learning_rate=0.1)
 model.fit(X_train, y_train)
-
-proba = model.predict_proba(X_val)
-y_pred = model.predict(X_val, threshold=0.5)
+y_pred = model.predict(X_val)
 ```
 
-### Experiments
-
-**1. Synthetic data** (100 samples, 5 features, labels generated from random weights plus noise through a sigmoid). The model reaches an accuracy of **0.96**, measured on the same data it was trained on.
-
-**2. Titanic (Kaggle).** Predicting passenger survival. The notebook walks through:
-
-- **EDA:** missing values, summary statistics, and plots of the survival distribution, age, and fare.
-- **Feature engineering:** `FamilySize` (siblings/spouses + parents/children + 1) and an `IsAlone` flag.
-- **Preprocessing:** a scikit-learn `ColumnTransformer` that imputes and standardizes the numeric features, one-hot encodes `Embarked`, ordinally encodes `Sex`, and passes `Pclass` and `IsAlone` through. `Name`, `Ticket`, and `Cabin` are dropped.
-- **Training and evaluation:** a stratified 70/30 train/validation split, comparing my model against scikit-learn's `LogisticRegression` with regularization turned off (`penalty=None`), to match my model. For the Kaggle submissions, the preprocessing pipeline is refitted on the full training set and both models are retrained on it.
+Synthetic data (100 samples): 0.96 accuracy on the training data. Titanic, against scikit-learn with `penalty=None`:
 
 | Model | Validation accuracy | Kaggle score (accuracy) |
-|-------|---------------------|--------------|
+|-------|---------------------|-------------------------|
 | Mine | 0.8022 | 0.76315 |
 | scikit-learn `LogisticRegression` | 0.8022 | 0.76315 |
 
-My model matches scikit-learn on both the validation accuracy and the Kaggle score. The predictions are not identical, though: the two models disagree on 16 of the 418 test passengers, and those differences cancel out in the score. (With scikit-learn's default L2 regularization left on, it scored 0.76555 on Kaggle, one passenger better than mine.)
+The two models disagree on 16 of the 418 test passengers, and the differences cancel out in the score.
 
 ## 03 - K-Nearest Neighbors (KNN)
 
-**Implementation:** [`my_knn.py`](./03%20-%20KNN/my_knn.py)
-**Walkthrough:** [`notebook.ipynb`](./03%20-%20KNN/notebook.ipynb)
+[`my_knn.py`](./03%20-%20KNN/my_knn.py) · [`notebook.ipynb`](./03%20-%20KNN/notebook.ipynb)
 
-### How it works
-
-KNN is a lazy learner: `fit` just stores the training data, and all the work happens in `predict`. For each sample to classify, the model:
-
-1. Computes the Euclidean distance, `√Σ(aᵢ − bᵢ)²`, from the sample to every training point.
-2. Takes the `k` closest points.
-3. Returns the most common class among them (a majority vote).
-
-If two classes tie in the vote, the one that comes first in sorted order wins. `predict` raises a `ValueError` if the model has not been fitted. Because KNN is distance-based, features should be scaled first.
-
-KNN has no loss function and nothing to optimize. The only hyperparameter is `n_neighbors`, and every prediction compares the sample against all the stored training points, so prediction gets slower as the training set grows.
-
-### Usage
+Predicts the majority class among the `n_neighbors` closest training points, using Euclidean distance. The features should be scaled.
 
 ```python
 from my_knn import KNN
@@ -152,392 +90,165 @@ model.fit(X_train, y_train)
 y_pred = model.predict(X_val)
 ```
 
-### Experiments
-
-**1. Synthetic data** (100 samples, 5 features, an 80/20 train/test split, `k=3`). The labels are random, so there is no pattern to learn, and the accuracy of **0.30** is about what chance (1 in 3) would give. This is a sanity check that the model runs, not a performance test.
-
-**2. Iris (Kaggle).** Classifying iris flowers into three species from sepal and petal measurements, using the [Iris Classification Challenge](https://www.kaggle.com/competitions/iris-classification-challenge) (105 training samples, 45 test samples). The notebook walks through:
-
-- **EDA:** dataset info, summary statistics, and scatter plots of sepal and petal dimensions by species.
-- **Preprocessing:** a stratified 80/20 train/validation split, then standardization with a `StandardScaler` fitted on the training set.
-- **Training and evaluation:** my model with `k` = 3, 5, and 10, compared against scikit-learn's `KNeighborsClassifier`. For the Kaggle submissions, the scaler is refitted on the full training set and the `k=10` models are retrained on it.
+Synthetic data (random labels): 0.30 accuracy, which is about chance. Iris:
 
 | Model | Validation accuracy | Kaggle score (accuracy) |
-|-------|---------------------|--------------|
+|-------|---------------------|-------------------------|
 | Mine (k = 3) | 0.9524 | |
 | Mine (k = 5) | 1.0000 | |
 | Mine (k = 10) | 1.0000 | 0.94444 |
 | scikit-learn `KNeighborsClassifier` (k = 10) | 1.0000 | 0.94444 |
 
-My model matches scikit-learn on both the validation set and the leaderboard. The validation set has only 21 samples, so each mistake costs about 4.8 percentage points, and `k=5` and `k=10` cannot be told apart.
+The validation set has only 21 samples, so `k=5` and `k=10` cannot be told apart.
 
 ## 04 - Naive Bayes
 
-**Implementation:** [`my_naive_bayes.py`](./04%20-%20Naive%20Bayes/my_naive_bayes.py)
-**Walkthrough:** [`notebook.ipynb`](./04%20-%20Naive%20Bayes/notebook.ipynb)
+[`my_naive_bayes.py`](./04%20-%20Naive%20Bayes/my_naive_bayes.py) · [`notebook.ipynb`](./04%20-%20Naive%20Bayes/notebook.ipynb)
 
-### How it works
-
-`Naive_Bayes` is a multinomial Naive Bayes classifier for word-count features, such as the output of a bag-of-words vectorizer. It applies Bayes' rule with the "naive" assumption that words are independent given the class:
-
-`P(class | document) ∝ P(class) × Π P(word | class)^count`
-
-- **Training:** the class priors `P(class)` come from how often each label appears. `P(word | class)` is the number of times the word appears in documents of that class, with Laplace smoothing (`alpha`, default `1`) added to every word count so that a word never seen in a class does not zero out the whole product.
-- **Prediction:** for each document, the class prior is multiplied by `P(word | class)` raised to the word's count, for each word that appears in the document. The class with the highest score wins.
-
-There is no loss function to minimize: the probabilities are estimated directly by counting words, and `alpha` is the only hyperparameter.
-
-`predict` raises a `ValueError` if the model has not been fitted. Both `fit` and `predict` expect a **pandas DataFrame** of word counts (one row per document, one column per word), and the columns must be the same at training and prediction time.
-
-### Usage
+Multinomial Naive Bayes with Laplace smoothing (`alpha=1`). It takes DataFrames of word counts, for example from a `CountVectorizer`.
 
 ```python
-from sklearn.feature_extraction.text import CountVectorizer
-import pandas as pd
 from my_naive_bayes import Naive_Bayes
 
-vectorizer = CountVectorizer()
-X_train = vectorizer.fit_transform(train_texts)
-X_train = pd.DataFrame(X_train.toarray(), columns=vectorizer.get_feature_names_out())
-
 model = Naive_Bayes(alpha=1)
-model.fit(X_train, y_train)
-
-X_val = pd.DataFrame(vectorizer.transform(val_texts).toarray(), columns=vectorizer.get_feature_names_out())
-y_pred = model.predict(X_val)
+model.fit(X_train_counts, y_train)
+y_pred = model.predict(X_val_counts)
 ```
 
-### Experiments
-
-**1. Synthetic data** (a tiny spam-vs-normal-message dataset: 4 training texts and 4 validation texts, turned into word counts with `CountVectorizer`). The model gets an F1 score of **1.0**, which confirms that the pipeline runs end to end.
-
-**2. Disaster Tweets (Kaggle).** Predicting whether a tweet is about a real disaster, using [NLP with Disaster Tweets](https://www.kaggle.com/competitions/nlp-getting-started) (7,613 labelled training tweets). The notebook walks through:
-
-- **Cleaning:** the `keyword` and `location` columns are dropped. Tweet text is lowercased, and everything except letters and spaces is removed.
-- **Preprocessing:** a stratified 80/20 train/validation split (6,090 / 1,523 tweets), then a `CountVectorizer` fitted on the training text.
-- **Training and evaluation:** my model compared against scikit-learn's `MultinomialNB`. For the Kaggle submissions, the vectorizer is refitted on all the labelled tweets and both models are retrained on them.
+Synthetic data: F1 of 1.0. Disaster Tweets:
 
 | Model | Validation F1 | Kaggle score (F1) |
 |-------|---------------|-------------------|
 | Mine | 0.7738 | 0.79957 |
 | scikit-learn `MultinomialNB` | 0.7738 | 0.79957 |
 
-My model matches scikit-learn exactly on both the validation set and the leaderboard.
-
 ## 05 - Support Vector Machine (SVM)
 
-**Implementation:** [`my_svm.py`](./05%20-%20SVM/my_svm.py)
-**Walkthrough:** [`notebook.ipynb`](./05%20-%20SVM/notebook.ipynb)
+[`my_svm.py`](./05%20-%20SVM/my_svm.py) · [`notebook.ipynb`](./05%20-%20SVM/notebook.ipynb)
 
-### How it works
-
-The `SVM` class is a linear, soft-margin binary classifier trained with the **hinge loss**. For a point with label `y` (−1 or +1) and score `f(x) = w·x + b`, the hinge loss is `max(0, 1 − y·f(x))`. It is zero when the point is on the correct side and outside the margin, and it grows linearly as the point moves inside the margin or onto the wrong side.
-
-Both modes solve the same soft-margin problem, `minimize ½‖w‖² + C Σ max(0, 1 − yᵢ(w·xᵢ + b))`. Labels are converted from 0/1 to −1/+1 internally, and the `mode` argument chooses how the problem is solved:
-
-- **`dual_problem`** (default): solves the dual form of the problem above. It minimizes `½ ΣΣ αᵢαⱼ yᵢyⱼ (xᵢ·xⱼ) − Σ αᵢ` subject to `Σ αᵢyᵢ = 0` and `0 ≤ αᵢ ≤ C`, using SciPy's `minimize` with the constraint and bounds. The weights come from `w = Σ αᵢ yᵢ xᵢ`, and the bias is the average of `yₖ − w·xₖ` over the free support vectors (those with `0 < α < C`). The parameter `C` controls how strongly hinge-loss violations are penalized.
-- **`gradient_descent`**: minimizes the regularized hinge loss directly, `λ‖w‖² + (1/n) Σ max(0, 1 − yᵢ(w·xᵢ + b))`, with subgradient descent. Only points that violate the margin (`y·f(x) < 1`) contribute to the gradient. Defaults: `epochs=1000`, `learning_rate=0.01`, `regularization_rate=0.01`. The regularization rate `λ` and `C` describe the same trade-off, with `C = 1 / (2·λ·n)` for `n` training samples.
-
-`predict` returns 1 when `w·x + b > 0` and 0 otherwise, and raises a `ValueError` if the model has not been fitted. After fitting, the parameters are available as `weights_` and `bias_`.
-
-### Usage
+Linear soft-margin SVM trained with the hinge loss. It is solved either in the dual form with SciPy (`mode='dual_problem'`, `C=1.0`) or directly with gradient descent (`mode='gradient_descent'`, `epochs=1000`, `learning_rate=0.01`, `regularization_rate=0.01`).
 
 ```python
 from my_svm import SVM
 
-# Dual problem
 model = SVM(mode='dual_problem', C=1.0)
-model.fit(X_train, y_train)
-y_pred = model.predict(X_val)
-
-# Gradient descent
-model = SVM(mode='gradient_descent', epochs=1000, learning_rate=0.01, regularization_rate=0.01)
 model.fit(X_train, y_train)
 y_pred = model.predict(X_val)
 ```
 
-### Experiments
-
-**1. Synthetic data** (100 samples, 5 features, labels generated from random weights plus noise through a sigmoid). Accuracy on the training data:
-
-| Method | Accuracy |
-|--------|----------|
-| Dual problem | 0.92 |
-| Gradient descent | 0.90 |
-
-**2. Titanic (Kaggle).** The same task and preprocessing as in the logistic regression notebook (family features, imputation, scaling, and encoding), with a stratified 70/30 train/validation split (623 / 268 passengers). I compare my two modes against scikit-learn's `SVC(kernel='linear')`. For the Kaggle submissions, the preprocessing pipeline is refitted on the full training set and all models are retrained on it.
+Synthetic data: 0.92 accuracy with the dual problem and 0.90 with gradient descent (training data). Titanic:
 
 | Model | Validation accuracy | Kaggle score (accuracy) |
-|-------|---------------------|--------------|
+|-------|---------------------|-------------------------|
 | Mine (Dual Problem) | 0.7761 | 0.77511 |
 | Mine (Gradient Descent) | 0.7276 | 0.79186 |
 | scikit-learn `SVC` (linear) | 0.7761 | 0.77511 |
 
-The dual problem version matches scikit-learn exactly: the same validation accuracy, the same Kaggle score, and identical predictions on all 418 test passengers. Gradient descent only approximates the solution (a constant learning rate and a fixed number of epochs), so its predictions differ from scikit-learn's for about 9% of the test passengers. Its default settings also correspond to `C ≈ 0.08` on the 623 training samples, compared with `C = 1` for the dual mode and scikit-learn. Its Kaggle score is higher but its validation accuracy is lower, and both gaps are only a handful of passengers, so I would not read it as the better model.
-
-The dual problem is solved with a general-purpose optimizer, so training time grows quickly with the number of samples.
+The dual version matches scikit-learn exactly, with identical predictions for all 418 test passengers. Gradient descent only approximates the solution and differs on about 9% of them, and its higher Kaggle score is a handful of passengers.
 
 ## 06 - Decision Tree
 
-### Classifier
+[`my_decision_tree_classifier.py`](./06%20-%20Decision%20Tree/my_decision_tree_classifier.py) · [`notebook_classification.ipynb`](./06%20-%20Decision%20Tree/notebook_classification.ipynb) · [`my_decision_tree_regressor.py`](./06%20-%20Decision%20Tree/my_decision_tree_regressor.py) · [`notebook_regression.ipynb`](./06%20-%20Decision%20Tree/notebook_regression.ipynb)
 
-**Implementation:** [`my_decision_tree_classifier.py`](./06%20-%20Decision%20Tree/my_decision_tree_classifier.py)
-**Walkthrough:** [`notebook_classification.ipynb`](./06%20-%20Decision%20Tree/notebook_classification.ipynb)
-
-#### How it works
-
-`Decision_Tree_Classifier` builds a binary classification tree in the style of CART. The `mode` argument chooses the impurity measure used to score splits:
-
-- **`gini`** (default): `1 − Σ pₖ²`, where `pₖ` is the fraction of samples of class `k` in the node.
-- **`entropy`**: `−Σ pₖ log₂ pₖ`.
-
-**Training.** Starting from the root, the tree looks for the best split of the samples in the current node. It tries every feature, with thresholds halfway between consecutive values, and scores each candidate by the weighted impurity of the two children, `(n_left/n)·impurity_left + (n_right/n)·impurity_right`. The split with the lowest cost wins, and the same procedure is applied to each child. A node becomes a leaf when it is pure, when the depth limit is reached, when it has a single sample, or when no split reduces the impurity. Each leaf predicts the most common class among its samples.
-
-**Prediction.** Each sample walks down the tree: it goes to the left child if `feature <= threshold` and to the right child otherwise, and it gets the prediction of the leaf it ends up in. `predict` raises a `ValueError` if the model has not been fitted. Both `fit` and `predict` expect a pandas DataFrame, because splits are stored by column name.
-
-**Depth.** The root is at depth 0 and nodes at depth `max_depth` can still be split once, so my `max_depth=k` produces the same tree as scikit-learn's `max_depth=k+1`. `max_depth=None` (or 0) means no limit.
-
-#### Usage
+Binary CART trees. The classifier splits on Gini impurity or entropy (`mode='gini'` or `'entropy'`) and predicts the majority class, and the regressor splits on the mean squared error and predicts the mean. Both take `max_depth` in the constructor, and 0 or `None` means no limit.
 
 ```python
 from my_decision_tree_classifier import Decision_Tree_Classifier
+from my_decision_tree_regressor import Decision_Tree_Regressor
 
-model = Decision_Tree_Classifier(mode='gini', max_depth=2)
-model.fit(X_train, y_train)
-y_pred = model.predict(X_val)
+clf = Decision_Tree_Classifier(mode='gini', max_depth=2)
+reg = Decision_Tree_Regressor(max_depth=3)
 ```
 
-#### Experiments
-
-**1. Synthetic data** (100 samples, 5 features, labels generated from random weights plus noise through a sigmoid), with no depth limit. Accuracy on the training data:
-
-| Impurity | Accuracy |
-|----------|----------|
-| Gini | 1.00 |
-| Entropy | 1.00 |
-
-**2. Titanic (Kaggle).** The same task and preprocessing as in the logistic regression notebook, with a stratified 70/30 train/validation split (623 / 268 passengers).
-
-- **Unlimited depth:** validation accuracy is 0.7425 with Gini and 0.7537 with entropy.
-- **Tuning `max_depth`:** trying depths from 0 to 10, the best validation accuracy is at `max_depth=2` for both impurity measures: 0.7985 with Gini and 0.8097 with entropy.
-- **Submission:** with `max_depth=2`, the preprocessing pipeline is refitted on the full training set and the models are retrained on it.
+**Classifier.** Synthetic data: 1.00 training accuracy with both Gini and entropy. Titanic:
 
 | Model | Validation accuracy | Kaggle score (accuracy) |
-|-------|---------------------|--------------------------|
+|-------|---------------------|-------------------------|
 | Mine (Gini, `max_depth=2`) | 0.7985 | 0.77511 |
 | Mine (Entropy, `max_depth=2`) | 0.8097 | 0.77511 |
 | scikit-learn `DecisionTreeClassifier` (Gini, `max_depth=3`) | 0.7985 | 0.77511 |
 
-Scikit-learn's `max_depth=3` is the same tree size as my `max_depth=2` (see the depth note above). My Gini tree matches scikit-learn exactly: the same validation accuracy, the same Kaggle score, and identical predictions for all 418 test passengers.
+The Gini tree matches scikit-learn exactly, with identical predictions for all 418 test passengers.
 
-### Regressor
-
-**Implementation:** [`my_decision_tree_regressor.py`](./06%20-%20Decision%20Tree/my_decision_tree_regressor.py)
-**Walkthrough:** [`notebook_regression.ipynb`](./06%20-%20Decision%20Tree/notebook_regression.ipynb)
-
-#### How it works
-
-`Decision_Tree_Regressor` builds a binary regression tree in the same way as the classifier, with the mean squared error as the criterion. The MSE of a node is `(1/n) Σ (y − ȳ)²`, where `ȳ` is the mean target of the samples in the node.
-
-**Training.** At each node, the tree tries every feature, with thresholds halfway between consecutive values, and scores each candidate by the weighted MSE of the two children, `(n_left/n)·MSE_left + (n_right/n)·MSE_right`. The split with the lowest cost wins, and the same procedure is applied to each child. A node becomes a leaf when all its targets are equal (MSE of 0), when the depth limit is reached, when it has a single sample, or when no split reduces the MSE. Each leaf predicts the mean target of its samples.
-
-**Prediction.** Each sample walks down the tree (left if `feature <= threshold`, right otherwise) and gets the mean of the leaf it ends up in. `predict` raises a `ValueError` if the model has not been fitted, and both `fit` and `predict` expect a pandas DataFrame for `X`.
-
-**Depth.** Depth is counted in the same way as in the classifier, so my `max_depth=k` produces the same tree size as scikit-learn's `max_depth=k+1`, and `max_depth=None` (or 0) means no limit.
-
-#### Usage
-
-```python
-from my_decision_tree_regressor import Decision_Tree_Regressor
-
-model = Decision_Tree_Regressor(max_depth=3)
-model.fit(X_train, y_train)
-y_pred = model.predict(X_val)
-```
-
-#### Experiments
-
-**1. Synthetic data** (10 samples, 5 features, with targets generated from random weights plus noise), with no depth limit. The training MSE is **0.0**, because a fully grown tree gives every sample its own leaf.
-
-**2. House Prices (Kaggle).** The same task, cleaning, and preprocessing as in the linear regression notebook, with a 70/30 train/validation split (1,022 / 438 houses).
-
-- **Unlimited depth:** validation RMSE is 27,806.72.
-- **Tuning `max_depth`:** trying depths from 0 to 10, the best validation RMSE is 24,940.43 at `max_depth=3`.
-- **Submission:** the preprocessing pipeline is refitted on the full training set and the tree is retrained on it with `max_depth=3`.
+**Regressor.** House Prices:
 
 | Model | Validation RMSE | Kaggle score (RMSE) |
 |-------|-----------------|---------------------|
 | Mine (`max_depth=3`) | 24,940.43 | 0.24192 |
 | scikit-learn `DecisionTreeRegressor` (`max_depth=4`) | 24,988.23 | 0.24192 |
 
-Scikit-learn's `max_depth=4` is the same tree size as my `max_depth=3`. The two models give identical predictions for all 1,459 test houses and the same Kaggle score, while their validation RMSEs are close but not identical. Validation RMSE is measured in dollars on the clipped `SalePrice` values. The Kaggle score is the competition's metric (RMSE on the log of the price), so lower is better.
+The test predictions are identical for all 1,459 houses. The validation RMSEs differ because one validation house sits exactly on a split threshold, which scikit-learn's single-precision arithmetic sends to the other side.
 
 ## 07 - Random Forest
 
-Both forests are built from the decision trees in [`06 - Decision Tree`](./06%20-%20Decision%20Tree), which they import by path, so keep the two folders side by side.
+[`my_random_forest_classifier.py`](./07%20-%20Random%20Forest/my_random_forest_classifier.py) · [`notebook_classification.ipynb`](./07%20-%20Random%20Forest/notebook_classification.ipynb) · [`my_random_forest_regressor.py`](./07%20-%20Random%20Forest/my_random_forest_regressor.py) · [`notebook_regression.ipynb`](./07%20-%20Random%20Forest/notebook_regression.ipynb)
 
-### Classifier
-
-**Implementation:** [`my_random_forest_classifier.py`](./07%20-%20Random%20Forest/my_random_forest_classifier.py)
-**Walkthrough:** [`notebook_classification.ipynb`](./07%20-%20Random%20Forest/notebook_classification.ipynb)
-
-#### How it works
-
-`Random_Forest_Classifier` is an ensemble of `Decision_Tree_Classifier` trees. Each of the `n_estimators` trees is built like this:
-
-1. Draw `frac_instances × n` rows at random with replacement (seeded with the tree's number, so results are reproducible). Repeated rows are kept, as in a standard bootstrap sample.
-2. Train a tree with the given `max_depth` on that sample. At every node, the tree draws a fresh random subset of `frac_features` of the columns (without replacement) and searches for its best split among those only.
-
-**Prediction.** Every tree predicts and the forest returns the majority vote. If the vote is tied, the smaller class label wins. `predict` raises a `ValueError` if the model has not been fitted, and both `fit` and `predict` expect a pandas DataFrame for `X`.
-
-#### Usage
+Ensembles of the trees from `06 - Decision Tree` (keep the folders side by side). Each tree trains on a bootstrap sample of the rows (`frac_instances`, repeated rows kept) and searches a random subset of `frac_features` of the columns at every split. The classifier takes a majority vote and the regressor averages.
 
 ```python
 from my_random_forest_classifier import Random_Forest_Classifier
+from my_random_forest_regressor import Random_Forest_Regressor
 
-model = Random_Forest_Classifier(max_depth=2, n_estimators=100, frac_instances=0.8, frac_features=0.8)
-model.fit(X_train, y_train)
-y_pred = model.predict(X_val)
+clf = Random_Forest_Classifier(max_depth=2, n_estimators=100, frac_instances=0.8, frac_features=0.8)
+reg = Random_Forest_Regressor(max_depth=3, n_estimators=100, frac_instances=0.4, frac_features=0.4)
 ```
 
-#### Experiments
-
-**1. Synthetic data** (100 samples, 5 features, labels generated from random weights plus noise through a sigmoid), with `max_depth=2` and 100 trees. The accuracy on the training data is **0.97**.
-
-**2. Titanic (Kaggle).** The same task and preprocessing as in the logistic regression notebook, with a stratified 70/30 train/validation split (623 / 268 passengers). For the Kaggle submissions, the preprocessing pipeline is refitted on the full training set and both models are retrained on it.
+**Classifier.** Synthetic data: 0.97 training accuracy. Titanic (100 trees, 80% of the rows and features):
 
 | Model | Validation accuracy | Kaggle score (accuracy) |
-|-------|---------------------|--------------------------|
+|-------|---------------------|-------------------------|
 | Mine (`max_depth=2`) | 0.8022 | 0.78229 |
 | scikit-learn `RandomForestClassifier` (`max_depth=3`) | 0.8060 | 0.78468 |
 
-Both forests use 100 trees, 80% of the rows, and 80% of the features, and scikit-learn's `max_depth=3` is the same tree size as my `max_depth=2` (see the depth note in the decision tree section). The two forests use the same design but different random draws, so they are not identical. On the test set they disagree on 3 of the 418 passengers.
-
-### Regressor
-
-**Implementation:** [`my_random_forest_regressor.py`](./07%20-%20Random%20Forest/my_random_forest_regressor.py)
-**Walkthrough:** [`notebook_regression.ipynb`](./07%20-%20Random%20Forest/notebook_regression.ipynb)
-
-#### How it works
-
-`Random_Forest_Regressor` works in the same way as the classifier, with `Decision_Tree_Regressor` trees, and the forest's prediction is the average of the trees' predictions. It takes the same constructor arguments (`max_depth`, `n_estimators`, `frac_instances`, `frac_features`) and raises a `ValueError` if `predict` is called before `fit`.
-
-#### Usage
-
-```python
-from my_random_forest_regressor import Random_Forest_Regressor
-
-model = Random_Forest_Regressor(max_depth=3, n_estimators=100, frac_instances=0.4, frac_features=0.4)
-model.fit(X_train, y_train)
-y_pred = model.predict(X_val)
-```
-
-#### Experiments
-
-**1. Synthetic data** (10 samples, 5 features, targets generated from random weights plus noise), with 100 trees, no depth limit, and 40% of the rows and 40% of the features. The MSE on the training data is **1.00**.
-
-**2. House Prices (Kaggle).** The same task, cleaning, and preprocessing as in the decision tree regressor notebook, with a 70/30 train/validation split (1,022 / 438 houses). For the Kaggle submissions, the preprocessing pipeline is refitted on the full training set and both models are retrained on it.
+**Regressor.** Synthetic data: 1.00 training MSE. House Prices (100 trees, 40% of the rows and features):
 
 | Model | Validation RMSE | Kaggle score (RMSE) |
 |-------|-----------------|---------------------|
 | Mine (`max_depth=3`) | 19,634.59 | 0.22817 |
 | scikit-learn `RandomForestRegressor` (`max_depth=4`) | 19,762.60 | 0.22887 |
 
-Both forests use 100 trees, 40% of the rows, and 40% of the features, and scikit-learn's `max_depth=4` is the same tree size as my `max_depth=3`. As in the classifier, the two forests use the same design but different random draws, so they are not identical. Validation RMSE is measured in dollars on the clipped `SalePrice` values. The Kaggle score is the competition's metric (RMSE on the log of the price), so lower is better.
+The forests use the same design but different random draws, so they are not identical. On the Titanic test set they disagree on 3 of the 418 passengers.
 
 ## 08 - Gradient Boosting
 
-Like the random forest, the boosting models are built from the decision trees in [`06 - Decision Tree`](./06%20-%20Decision%20Tree), which they import by path, so keep the folders side by side. Both boosting models use `Decision_Tree_Regressor` trees.
+[`my_gradient_boosting_classifier.py`](./08%20-%20Gradient%20Boosting/my_gradient_boosting_classifier.py) · [`notebook_classification.ipynb`](./08%20-%20Gradient%20Boosting/notebook_classification.ipynb) · [`my_gradient_boosting_regressor.py`](./08%20-%20Gradient%20Boosting/my_gradient_boosting_regressor.py) · [`notebook_regression.ipynb`](./08%20-%20Gradient%20Boosting/notebook_regression.ipynb)
 
-### Classifier
-
-**Implementation:** [`my_gradient_boosting_classifier.py`](./08%20-%20Gradient%20Boosting/my_gradient_boosting_classifier.py)
-**Walkthrough:** [`notebook_classification.ipynb`](./08%20-%20Gradient%20Boosting/notebook_classification.ipynb)
-
-#### How it works
-
-`Gradient_Boosting_Classifier` is a binary classifier that minimizes the log loss. It keeps a raw score (the log-odds) for every sample and improves it one tree at a time:
-
-1. Start every sample at the same constant raw score, the log-odds of the two classes in the training labels.
-2. Turn the raw scores into probabilities with the sigmoid, `p = 1 / (1 + e^(−score))`.
-3. Compute the residuals `y − p`, which are the negative gradient of the log loss.
-4. Fit a shallow `Decision_Tree_Regressor` (of depth `max_depth`) to the residuals. It is a regression tree because the residuals are continuous.
-5. Add the tree's prediction, scaled by `learning_rate`, to the raw scores, then recompute `p` and the residuals.
-6. Repeat for the boosting rounds.
-
-To predict, the model adds `learning_rate` times the sum of the trees' predictions to the starting score and predicts class 1 when the resulting probability is above 0.5. Each leaf holds the mean residual of its samples. The defaults are `max_depth=4`, `n_estimators=50`, and `learning_rate=0.1`, and depth is counted as in the decision tree. `predict` raises a `ValueError` if the model has not been fitted, labels must be 0 and 1, and both `fit` and `predict` expect a pandas DataFrame for `X`.
-
-#### Usage
+Gradient boosting with `Decision_Tree_Regressor` trees from `06 - Decision Tree`, each fitted to the current residuals. The regressor minimizes the squared error, and the classifier minimizes the log loss on a raw log-odds score, fitting trees to `y − p`. The defaults are `max_depth=4`, `n_estimators=50`, and `learning_rate=0.1`.
 
 ```python
 from my_gradient_boosting_classifier import Gradient_Boosting_Classifier
-
-model = Gradient_Boosting_Classifier(max_depth=4, n_estimators=100, learning_rate=0.1)
-model.fit(X_train, y_train)
-y_pred = model.predict(X_val)
-```
-
-#### Experiments
-
-**1. Synthetic data** (100 samples, 5 features, labels generated from random weights plus noise through a sigmoid), with `max_depth=2` and 100 trees. The accuracy on the training data is **0.99**.
-
-**2. Titanic (Kaggle).** The same task and preprocessing as in the logistic regression notebook, with a stratified 70/30 train/validation split (623 / 268 passengers). For the Kaggle submissions, the preprocessing pipeline is refitted on the full training set and both models are retrained on it.
-
-| Model | Validation accuracy | Kaggle score (accuracy) |
-|-------|---------------------|--------------------------|
-| Mine (`max_depth=4`, 50 estimators) | 0.7985 | 0.78229 |
-| scikit-learn `GradientBoostingClassifier` (`max_depth=5`, 50 estimators) | 0.7985 | 0.76794 |
-
-Both models use a learning rate of 0.1, and scikit-learn's `max_depth=5` is the same tree size as my `max_depth=4` (see the depth note in the decision tree section). Both models use 50 estimators. On the test set, the two models disagree on 22 of the 418 passengers.
-
-### Regressor
-
-**Implementation:** [`my_gradient_boosting_regressor.py`](./08%20-%20Gradient%20Boosting/my_gradient_boosting_regressor.py)
-**Walkthrough:** [`notebook_regression.ipynb`](./08%20-%20Gradient%20Boosting/notebook_regression.ipynb)
-
-#### How it works
-
-`Gradient_Boosting_Regressor` builds the model one tree at a time, with each tree correcting the errors of the ensemble so far. It minimizes the squared error:
-
-1. Start with a constant prediction, the mean of `y`.
-2. Compute the residuals, `y − current prediction`. For the squared error, these are the negative gradient of the loss.
-3. Fit a shallow `Decision_Tree_Regressor` (of depth `max_depth`) to the residuals.
-4. Add the tree to the model, scaled by `learning_rate`, and update the residuals.
-5. Repeat for the boosting rounds.
-
-The prediction for a sample is the starting mean plus `learning_rate` times the sum of the trees' predictions. The defaults are `max_depth=4`, `n_estimators=50`, and `learning_rate=0.1`. Depth is counted as in the decision tree, so my `max_depth=k` produces the same tree size as scikit-learn's `max_depth=k+1`. `predict` raises a `ValueError` if the model has not been fitted, and both `fit` and `predict` expect a pandas DataFrame for `X`.
-
-#### Usage
-
-```python
 from my_gradient_boosting_regressor import Gradient_Boosting_Regressor
 
-model = Gradient_Boosting_Regressor(max_depth=4, n_estimators=50, learning_rate=0.1)
-model.fit(X_train, y_train)
-y_pred = model.predict(X_val)
+clf = Gradient_Boosting_Classifier(max_depth=4, n_estimators=50, learning_rate=0.1)
+reg = Gradient_Boosting_Regressor(max_depth=4, n_estimators=50, learning_rate=0.1)
 ```
 
-#### Experiments
+**Classifier.** Synthetic data: 0.99 training accuracy. Titanic (50 estimators, learning rate 0.1):
 
-**1. Synthetic data** (10 samples, 5 features, targets generated from random weights plus noise), with the default settings. The MSE on the training data is about **0.00004**, because the ensemble fits the 10 points almost exactly.
+| Model | Validation accuracy | Kaggle score (accuracy) |
+|-------|---------------------|-------------------------|
+| Mine (`max_depth=4`) | 0.7985 | 0.78229 |
+| scikit-learn `GradientBoostingClassifier` (`max_depth=5`) | 0.7985 | 0.76794 |
 
-**2. House Prices (Kaggle).** The same task, cleaning, preprocessing, and train/validation split as in the decision tree regressor notebook (1,022 / 438 houses). For the Kaggle submissions, the preprocessing pipeline is refitted on the full training set and both models are retrained on it.
+The two models disagree on 22 of the 418 test passengers.
+
+**Regressor.** Synthetic data: about 0.00004 training MSE. House Prices (50 estimators, learning rate 0.1):
 
 | Model | Validation RMSE | Kaggle score (RMSE) |
 |-------|-----------------|---------------------|
-| Mine (`max_depth=4`, 50 estimators) | 16,303.76 | 0.19286 |
-| scikit-learn `GradientBoostingRegressor` (`max_depth=5`, 50 estimators) | 16,086.96 | 0.19286 |
+| Mine (`max_depth=4`) | 16,303.76 | 0.19286 |
+| scikit-learn `GradientBoostingRegressor` (`max_depth=5`) | 16,086.96 | 0.19286 |
 
-Both models use a learning rate of 0.1, and scikit-learn's `max_depth=5` is the same tree size as my `max_depth=4`. On the test set, their predictions differ by about $327 per house on average. Validation RMSE is measured in dollars on the clipped `SalePrice` values. The Kaggle score is the competition's metric (RMSE on the log of the price), so lower is better.
+Their test predictions differ by about $327 per house on average.
 
 ## Model comparison
 
-A quick look at how my from-scratch models compare on the two main Kaggle datasets, ranked by Kaggle score (best first). Within each table the models use the same cleaning, preprocessing, and train/validation split, so the numbers are directly comparable. KNN (Iris) and Naive Bayes (Disaster Tweets) each use their own dataset, so they are not included.
+All my models, ranked by Kaggle score (best first). Within each table the models use the same preprocessing and split. KNN (Iris) and Naive Bayes (Disaster Tweets) use their own datasets, so they are not included.
 
-**Titanic** (classification, higher is better):
+**Titanic** (higher is better):
 
 | Rank | Model | Validation accuracy | Kaggle score (accuracy) |
-|------|-------|---------------------|--------------------------|
+|------|-------|---------------------|-------------------------|
 | 1 | SVM (gradient descent) | 0.7276 | 0.79186 |
 | 2 (tie) | Random Forest (`max_depth=2`) | 0.8022 | 0.78229 |
 | 2 (tie) | Gradient Boosting (`max_depth=4`) | 0.7985 | 0.78229 |
@@ -546,7 +257,7 @@ A quick look at how my from-scratch models compare on the two main Kaggle datase
 | 4 (tie) | Decision Tree (entropy, `max_depth=2`) | 0.8097 | 0.77511 |
 | 7 | Logistic Regression | 0.8022 | 0.76315 |
 
-**House Prices** (regression, lower is better):
+**House Prices** (lower is better):
 
 | Rank | Model | Validation RMSE | Kaggle score (RMSE) |
 |------|-------|-----------------|---------------------|
@@ -556,17 +267,40 @@ A quick look at how my from-scratch models compare on the two main Kaggle datase
 | 4 | Random Forest (`max_depth=3`) | 19,634.59 | 0.22817 |
 | 5 | Decision Tree (`max_depth=3`) | 24,940.43 | 0.24192 |
 
-**What the tables show**
+On Titanic only 12 passengers out of 418 separate first from last, so small differences are partly luck. The ensembles beat a single tree on both datasets, and linear regression wins on House Prices.
 
-- **The Kaggle ranking and the validation ranking differ.** On Titanic, the SVM trained with gradient descent has the best Kaggle score but the lowest validation accuracy, and logistic regression is tied for second on validation accuracy but last on Kaggle.
-- **The Titanic scores are close.** Only 12 passengers out of 418 separate first from last, so small differences are partly luck.
-- **Ensembles beat a single tree.** The random forest ranks above the decision tree on both datasets, and on House Prices gradient boosting ranks above the forest.
-- **On House Prices, linear regression wins clearly.** Both versions beat both tree models. A tree of this depth can predict at most 16 different prices, while the linear model predicts a different price for every house.
+## Running the notebooks
+
+Each notebook reads data from `../data` and imports models by path, so run it from its own folder inside a full clone of the repo. On Colab, run this first (change the folder name to match):
+
+```python
+!git clone -q https://github.com/Sam50x/ML-from-Scratch.git
+%cd "ML-from-Scratch/01 - Linear Regression"
+```
+
+Colab may need `!pip install -U numpy` and a runtime restart, because the code needs NumPy 2.1 or newer and Python 3.12 or newer.
+
+| Model | Notebook | Colab |
+|-------|----------|-------|
+| Linear Regression | [`01 - Linear Regression/notebook.ipynb`](./01%20-%20Linear%20Regression/notebook.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Sam50x/ML-from-Scratch/blob/main/01%20-%20Linear%20Regression/notebook.ipynb) |
+| Logistic Regression | [`02 - Logistic Regression/notebook.ipynb`](./02%20-%20Logistic%20Regression/notebook.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Sam50x/ML-from-Scratch/blob/main/02%20-%20Logistic%20Regression/notebook.ipynb) |
+| KNN | [`03 - KNN/notebook.ipynb`](./03%20-%20KNN/notebook.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Sam50x/ML-from-Scratch/blob/main/03%20-%20KNN/notebook.ipynb) |
+| Naive Bayes | [`04 - Naive Bayes/notebook.ipynb`](./04%20-%20Naive%20Bayes/notebook.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Sam50x/ML-from-Scratch/blob/main/04%20-%20Naive%20Bayes/notebook.ipynb) |
+| SVM | [`05 - SVM/notebook.ipynb`](./05%20-%20SVM/notebook.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Sam50x/ML-from-Scratch/blob/main/05%20-%20SVM/notebook.ipynb) |
+| Decision Tree (classifier) | [`06 - Decision Tree/notebook_classification.ipynb`](./06%20-%20Decision%20Tree/notebook_classification.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Sam50x/ML-from-Scratch/blob/main/06%20-%20Decision%20Tree/notebook_classification.ipynb) |
+| Decision Tree (regressor) | [`06 - Decision Tree/notebook_regression.ipynb`](./06%20-%20Decision%20Tree/notebook_regression.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Sam50x/ML-from-Scratch/blob/main/06%20-%20Decision%20Tree/notebook_regression.ipynb) |
+| Random Forest (classifier) | [`07 - Random Forest/notebook_classification.ipynb`](./07%20-%20Random%20Forest/notebook_classification.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Sam50x/ML-from-Scratch/blob/main/07%20-%20Random%20Forest/notebook_classification.ipynb) |
+| Random Forest (regressor) | [`07 - Random Forest/notebook_regression.ipynb`](./07%20-%20Random%20Forest/notebook_regression.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Sam50x/ML-from-Scratch/blob/main/07%20-%20Random%20Forest/notebook_regression.ipynb) |
+| Gradient Boosting (classifier) | [`08 - Gradient Boosting/notebook_classification.ipynb`](./08%20-%20Gradient%20Boosting/notebook_classification.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Sam50x/ML-from-Scratch/blob/main/08%20-%20Gradient%20Boosting/notebook_classification.ipynb) |
+| Gradient Boosting (regressor) | [`08 - Gradient Boosting/notebook_regression.ipynb`](./08%20-%20Gradient%20Boosting/notebook_regression.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Sam50x/ML-from-Scratch/blob/main/08%20-%20Gradient%20Boosting/notebook_regression.ipynb) |
 
 ## Repo structure
 
 ```
 ML-from-Scratch/
+├── README.md
+├── requirements.txt
+├── .gitignore
 ├── 01 - Linear Regression/
 │   ├── my_linear_regression.py   # the model
 │   └── notebook.ipynb            # experiments
@@ -606,4 +340,4 @@ ML-from-Scratch/
 
 ## Requirements
 
-`numpy` (2.1 or newer), `pandas`, `scipy`, `scikit-learn` (preprocessing and metrics only), `seaborn`, `matplotlib`
+Python 3.12 or newer, and the packages in [`requirements.txt`](./requirements.txt): `numpy` (2.1 or newer), `pandas`, `scipy`, `scikit-learn` (preprocessing and metrics only), `seaborn`, `matplotlib`. Install them with `pip install -r requirements.txt`.

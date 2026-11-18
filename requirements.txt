@@ -1,0 +1,8 @@
+# Python 3.12 or newer is required (several notebooks use nested quotes inside f-strings).
+numpy>=2.1
+pandas>=2.0
+scipy
+scikit-learn>=1.4
+seaborn
+matplotlib
+ipykernel
