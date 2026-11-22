@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-class KNN():
+class KNN:
     def __init__(self, n_neighbors):
         self.is_fitted = False
         self.k = n_neighbors

@@ -1,6 +1,6 @@
 import numpy as np
 
-class Logistic_Regression():
+class Logistic_Regression:
     def __init__(self, epochs=1000, learning_rate=0.1):
         self.is_fitted = False
 
