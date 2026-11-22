@@ -2,7 +2,7 @@ import numpy as np
 
 
 class KMeans:
-    def __init__(self, n_clusters, max_iterations=1000):
+    def __init__(self, n_clusters, max_iterations=100):
         self.is_fitted = False
         self.n_clusters = n_clusters
         self.max_iterations = max_iterations
@@ -72,7 +72,10 @@ class KMeans:
             cluster_indices = self.labels == i
             cluster_instances = X[cluster_indices]
 
-            updated_cluster = cluster_instances.mean(axis=0).tolist()
-            updated_clusters.append(updated_cluster)
+            if len(cluster_instances) == 0:
+                updated_clusters.append(self.centroids[i])
+            else:
+                updated_cluster = cluster_instances.mean(axis=0).tolist()
+                updated_clusters.append(updated_cluster)
 
         return updated_clusters
