@@ -15,13 +15,13 @@ Core machine learning algorithms implemented from scratch with NumPy and compare
 | 07 | [Random Forest](./07%20-%20Random%20Forest) | Done    | Synthetic data, [Titanic](https://www.kaggle.com/competitions/titanic) (classifier), [House Prices](https://www.kaggle.com/competitions/house-prices-advanced-regression-techniques/) (regressor) |
 | 08 | [Gradient Boosting](./08%20-%20Gradient%20Boosting) | Done    | Synthetic data, [Titanic](https://www.kaggle.com/competitions/titanic) (classifier), [House Prices](https://www.kaggle.com/competitions/house-prices-advanced-regression-techniques/) (regressor) |
 | 09 | [Principal Component Analysis (PCA)](./09%20-%20PCA) | Done    | Synthetic data, House Prices + Titanic (as preprocessing) |
-| 10 | K-Means                                    | Planned | |
+| 10 | [K-Means](./10%20-%20KMeans)               | Done    | Synthetic data, [Tabular Playground Series - Jul 2022](https://www.kaggle.com/competitions/tabular-playground-series-jul-2022) |
 | 11 | DBSCAN                                     | Planned | |
 | 12 | Gaussian Mixture Model (GMM)               | Planned | |
 | 13 | Stacking                                   | Planned | |
 | 14 | Projects                                   | Planned | One end-to-end project for each task: classification, regression, and clustering |
 
-All models share one interface: hyperparameters go in the constructor, and `fit(X, y)` / `predict(X)` (or `transform(X)` for PCA) take only the data.
+All models share one interface: hyperparameters go in the constructor, and `fit(X, y)` / `predict(X)` (or `transform(X)` for PCA) take only the data. The unsupervised models (PCA and K-Means) call `fit(X)` without labels.
 
 ## Experiment setup
 
@@ -272,9 +272,33 @@ X_reduced = pca.transform(X)
 
 The implementation matches scikit-learn’s `PCA` on the cumulative explained variance curves.
 
+## 10 - K-Means
+
+[`my_kmeans.py`](./10%20-%20KMeans/my_kmeans.py) · [`notebook.ipynb`](./10%20-%20KMeans/notebook.ipynb)
+
+Lloyd's algorithm: the centroids start as random points (standard-normal draws, seeded with 42), then every sample is assigned to its nearest centroid by Euclidean distance and each centroid moves to the mean of its samples, until the centroids stop changing or `max_iterations` (default 100) is reached. An empty cluster keeps its previous centroid. It provides `fit`, `predict`, and `fit_predict`.
+
+```python
+from my_kmeans import KMeans
+
+model = KMeans(n_clusters=3, max_iterations=100)
+labels = model.fit_predict(X)
+```
+
+**Synthetic data** (100 samples, 5 features, 3 blobs plus noise): adjusted Rand index of 1.0.
+
+**Tabular Playground Series - July 2022** (98,000 unlabeled samples, scored by adjusted Rand index). Trying 2, 4, 6, 8, and 10 clusters, the silhouette score on the first 9,800 rows is best with 2 clusters.
+
+| Model | Silhouette score | Kaggle score (adjusted Rand index) |
+|-------|------------------|-------------------------------------|
+| Mine (`n_clusters=2`) | 0.17652 | 0.11271 |
+| scikit-learn `KMeans` (`n_clusters=2`) | 0.17637 | 0.11293 |
+
+Scikit-learn initializes with k-means++ and mine with random points. The two put 99.95% of the 98,000 rows in the same cluster. Higher is better for both scores.
+
 ## Model comparison
 
-All my models, ranked by Kaggle score (best first). Within each table the models use the same preprocessing and split. KNN (Iris) and Naive Bayes (Disaster Tweets) use their own datasets, so they are not included.
+All my models, ranked by Kaggle score (best first). Within each table the models use the same preprocessing and split. KNN (Iris), Naive Bayes (Disaster Tweets), and K-Means (Tabular Playground) use their own datasets, so they are not included.
 
 **Titanic** (higher is better):
 
@@ -326,6 +350,7 @@ Colab may need `!pip install -U numpy` and a runtime restart, because the code n
 | Gradient Boosting (classifier) | [`08 - Gradient Boosting/notebook_classification.ipynb`](./08%20-%20Gradient%20Boosting/notebook_classification.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Sam50x/ML-from-Scratch/blob/main/08%20-%20Gradient%20Boosting/notebook_classification.ipynb) |
 | Gradient Boosting (regressor) | [`08 - Gradient Boosting/notebook_regression.ipynb`](./08%20-%20Gradient%20Boosting/notebook_regression.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Sam50x/ML-from-Scratch/blob/main/08%20-%20Gradient%20Boosting/notebook_regression.ipynb) |
 | PCA | [`09 - PCA/notebook.ipynb`](./09%20-%20PCA/notebook.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Sam50x/ML-from-Scratch/blob/main/09%20-%20PCA/notebook.ipynb) |
+| K-Means | [`10 - KMeans/notebook.ipynb`](./10%20-%20KMeans/notebook.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Sam50x/ML-from-Scratch/blob/main/10%20-%20KMeans/notebook.ipynb) |
 
 ## Repo structure
 
@@ -367,6 +392,9 @@ ML-from-Scratch/
 ├── 09 - PCA/
 │   ├── my_pca.py
 │   └── notebook.ipynb
+├── 10 - KMeans/
+│   ├── my_kmeans.py
+│   └── notebook.ipynb
 └── data/
     ├── house_prices/
     │   ├── preprocessed/          # full.csv, test.csv, y_full.csv
@@ -375,7 +403,8 @@ ML-from-Scratch/
     │   ├── preprocessed/
     │   └── submissions/
     ├── iris/
-    └── disaster_tweets/
+    ├── disaster_tweets/
+    └── tabular_playground_jul_2022/
 ```
 
 ## Requirements
