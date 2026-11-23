@@ -15,19 +15,10 @@ class DBSCAN:
         next_label = 0
 
         for i in range(len(X)):
-            x = X[i]
-            sq_diffs = (X - x) ** 2
-            distances = np.sqrt(np.sum(sq_diffs, axis=1))
-
-            radius_mask = distances <= self.epsilon
-            neighbors_indices = np.where(radius_mask)[0]
-
-            if len(neighbors_indices) >= self.min_samples - 1:
-                if self.labels[i] == -1:
-                    self.labels[i] = next_label
-                    next_label += 1
-                for neighbor_index in neighbors_indices:
-                    self.labels[neighbor_index] = self.labels[i]
+            if self.labels[i] != -1:
+                continue
+            self.__label_neighborhood(X, i, next_label)
+            next_label += 1
 
         self.is_fitted = True
 
@@ -35,3 +26,20 @@ class DBSCAN:
         self.fit(X)
         print(self.labels)
         return self.labels
+
+    def __label_neighborhood(self, X, index, label):
+        x = X[index]
+        sq_diffs = (X - x) ** 2
+        distances = np.sqrt(np.sum(sq_diffs, axis=1))
+
+        radius_mask = distances <= self.epsilon
+        neighbors_indices = np.where(radius_mask)[0]
+
+        if len(neighbors_indices) >= self.min_samples - 1:
+            if self.labels[index] == -1:
+                self.labels[index] = label
+            for neighbor_index in neighbors_indices:
+                if self.labels[neighbor_index] != -1:
+                    continue
+                self.labels[neighbor_index] = self.labels[index]
+                self.__label_neighborhood(X, neighbor_index, label)
