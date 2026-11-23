@@ -14,14 +14,14 @@ Core machine learning algorithms implemented from scratch with NumPy and compare
 | 06 | [Decision Tree](./06%20-%20Decision%20Tree) | Done    | Synthetic data, [Titanic](https://www.kaggle.com/competitions/titanic) (classifier), [House Prices](https://www.kaggle.com/competitions/house-prices-advanced-regression-techniques/) (regressor) |
 | 07 | [Random Forest](./07%20-%20Random%20Forest) | Done    | Synthetic data, [Titanic](https://www.kaggle.com/competitions/titanic) (classifier), [House Prices](https://www.kaggle.com/competitions/house-prices-advanced-regression-techniques/) (regressor) |
 | 08 | [Gradient Boosting](./08%20-%20Gradient%20Boosting) | Done    | Synthetic data, [Titanic](https://www.kaggle.com/competitions/titanic) (classifier), [House Prices](https://www.kaggle.com/competitions/house-prices-advanced-regression-techniques/) (regressor) |
-| 09 | [Principal Component Analysis (PCA)](./09%20-%20PCA) | Done    | Synthetic data, House Prices + Titanic (as preprocessing) |
-| 10 | [K-Means](./10%20-%20KMeans)               | Done    | Synthetic data, [Tabular Playground Series - Jul 2022](https://www.kaggle.com/competitions/tabular-playground-series-jul-2022) |
-| 11 | DBSCAN                                     | Planned | |
+| 09 | [Principal Component Analysis (PCA)](./09%20-%20PCA) | Done    | Synthetic data, [House Prices](https://www.kaggle.com/competitions/house-prices-advanced-regression-techniques/) + [Titanic](https://www.kaggle.com/competitions/titanic) (as preprocessing) |
+| 10 | [K-Means](./10%20-%20KMeans)               | Done    | Synthetic data, [Ibiy Thala Hidden Customer Groups](https://www.kaggle.com/competitions/ibiy-thala-hidden-customer-groups) |
+| 11 | [DBSCAN](./11%20-%20DBSCAN)                | Done    | Synthetic data, [Ibiy Thala Hidden Customer Groups](https://www.kaggle.com/competitions/ibiy-thala-hidden-customer-groups) |
 | 12 | Gaussian Mixture Model (GMM)               | Planned | |
 | 13 | Stacking                                   | Planned | |
 | 14 | Projects                                   | Planned | One end-to-end project for each task: classification, regression, and clustering |
 
-All models share one interface: hyperparameters go in the constructor, and `fit(X, y)` / `predict(X)` (or `transform(X)` for PCA) take only the data. The unsupervised models (PCA and K-Means) call `fit(X)` without labels.
+All models share one interface: hyperparameters go in the constructor, and `fit(X, y)` / `predict(X)` (or `transform(X)` for PCA) take only the data. The unsupervised models (PCA, K-Means, and DBSCAN) call `fit(X)` without labels.
 
 ## Experiment setup
 
@@ -285,20 +285,44 @@ model = KMeans(n_clusters=3, max_iterations=100)
 labels = model.fit_predict(X)
 ```
 
-**Synthetic data** (100 samples, 5 features, 3 blobs plus noise): adjusted Rand index of 1.0.
+**Synthetic data** (blobs): adjusted Rand index of 1.0.
 
-**Tabular Playground Series - July 2022** (98,000 unlabeled samples, scored by adjusted Rand index). Trying 2, 4, 6, 8, and 10 clusters, the silhouette score on the first 9,800 rows is best with 2 clusters.
+**Ibiy Thala Hidden Customer Groups** (customer segmentation, scored by adjusted Rand index). Silhouette tuning over `n_clusters` in {2, 4, 6, 8, 10} selects the best `n`.
 
-| Model | Silhouette score | Kaggle score (adjusted Rand index) |
-|-------|------------------|-------------------------------------|
-| Mine (`n_clusters=2`) | 0.17652 | 0.11271 |
-| scikit-learn `KMeans` (`n_clusters=2`) | 0.17637 | 0.11293 |
+| Model | Kaggle score (adjusted Rand index) |
+|-------|-------------------------------------|
+| Mine | 0.40981 |
+| scikit-learn `KMeans` | 0.40981 |
 
-Scikit-learn initializes with k-means++ and mine with random points. The two put 99.95% of the 98,000 rows in the same cluster. Higher is better for both scores.
+Both models produce the same score on the competition.
+
+## 11 - DBSCAN
+
+[`my_dbscan.py`](./11%20-%20DBSCAN/my_dbscan.py) · [`notebook.ipynb`](./11%20-%20DBSCAN/notebook.ipynb)
+
+Density-based clustering. Points with at least `min_samples` neighbors inside radius `epsilon` are core points; clusters grow by recursively expanding neighborhoods. Points that never join a dense region stay noise (`label = -1`). It provides `fit` and `fit_predict`.
+
+```python
+from my_dbscan import DBSCAN
+
+model = DBSCAN(epsilon=0.2, min_samples=5)
+labels = model.fit_predict(X)
+```
+
+**Synthetic data** (`make_moons`, noise=0.05): recovers the two interlocking half-circles (adjusted Rand index near 1.0 with suitable `epsilon`).
+
+**Ibiy Thala Hidden Customer Groups** (same customer segmentation data as K-Means):
+
+| Model | Kaggle score (adjusted Rand index) |
+|-------|-------------------------------------|
+| Mine (`epsilon=0.5`, `min_samples=5`) | 0.00096 |
+| scikit-learn `DBSCAN` (`eps=0.5`, `min_samples=5`) | 0.00096 |
+
+The two implementations match. The low ARI indicates that the chosen density parameters are not well suited to this particular dataset (most points become noise or form few meaningful clusters); the exercise still validates that the from-scratch version behaves like scikit-learn.
 
 ## Model comparison
 
-All my models, ranked by Kaggle score (best first). Within each table the models use the same preprocessing and split. KNN (Iris), Naive Bayes (Disaster Tweets), and K-Means (Tabular Playground) use their own datasets, so they are not included.
+All my models, ranked by Kaggle score (best first). Within each table the models use the same preprocessing and split. KNN (Iris), Naive Bayes (Disaster Tweets), K-Means, and DBSCAN (customer segmentation) use their own datasets, so they are not included in the Titanic / House Prices tables.
 
 **Titanic** (higher is better):
 
@@ -351,6 +375,7 @@ Colab may need `!pip install -U numpy` and a runtime restart, because the code n
 | Gradient Boosting (regressor) | [`08 - Gradient Boosting/notebook_regression.ipynb`](./08%20-%20Gradient%20Boosting/notebook_regression.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Sam50x/ML-from-Scratch/blob/main/08%20-%20Gradient%20Boosting/notebook_regression.ipynb) |
 | PCA | [`09 - PCA/notebook.ipynb`](./09%20-%20PCA/notebook.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Sam50x/ML-from-Scratch/blob/main/09%20-%20PCA/notebook.ipynb) |
 | K-Means | [`10 - KMeans/notebook.ipynb`](./10%20-%20KMeans/notebook.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Sam50x/ML-from-Scratch/blob/main/10%20-%20KMeans/notebook.ipynb) |
+| DBSCAN | [`11 - DBSCAN/notebook.ipynb`](./11%20-%20DBSCAN/notebook.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Sam50x/ML-from-Scratch/blob/main/11%20-%20DBSCAN/notebook.ipynb) |
 
 ## Repo structure
 
@@ -394,6 +419,9 @@ ML-from-Scratch/
 │   └── notebook.ipynb
 ├── 10 - KMeans/
 │   ├── my_kmeans.py
+│   └── notebook.ipynb
+├── 11 - DBSCAN/
+│   ├── my_dbscan.py
 │   └── notebook.ipynb
 └── data/
     ├── house_prices/
