@@ -24,7 +24,7 @@ class DBSCAN:
 
     def fit_predict(self, X):
         self.fit(X)
-        print(self.labels)
+
         return self.labels
 
     def __label_neighborhood(self, X, index, label):
