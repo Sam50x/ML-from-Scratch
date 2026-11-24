@@ -15,8 +15,8 @@ Core machine learning algorithms implemented from scratch with NumPy and compare
 | 07 | [Random Forest](./07%20-%20Random%20Forest) | Done    | Synthetic data, [Titanic](https://www.kaggle.com/competitions/titanic) (classifier), [House Prices](https://www.kaggle.com/competitions/house-prices-advanced-regression-techniques/) (regressor) |
 | 08 | [Gradient Boosting](./08%20-%20Gradient%20Boosting) | Done    | Synthetic data, [Titanic](https://www.kaggle.com/competitions/titanic) (classifier), [House Prices](https://www.kaggle.com/competitions/house-prices-advanced-regression-techniques/) (regressor) |
 | 09 | [Principal Component Analysis (PCA)](./09%20-%20PCA) | Done    | Synthetic data, [House Prices](https://www.kaggle.com/competitions/house-prices-advanced-regression-techniques/) + [Titanic](https://www.kaggle.com/competitions/titanic) (as preprocessing) |
-| 10 | [K-Means](./10%20-%20KMeans)               | Done    | Synthetic data, [Ibiy Thala Hidden Customer Groups](https://www.kaggle.com/competitions/ibiy-thala-hidden-customer-groups) |
-| 11 | [DBSCAN](./11%20-%20DBSCAN)                | Done    | Synthetic data, [Ibiy Thala Hidden Customer Groups](https://www.kaggle.com/competitions/ibiy-thala-hidden-customer-groups) |
+| 10 | [K-Means](./10%20-%20KMeans)               | Done    | Synthetic data, [K-Means Clustering - XM](https://www.kaggle.com/competitions/k-means-clustering-xm) |
+| 11 | [DBSCAN](./11%20-%20DBSCAN)                | Done    | Synthetic data, [K-Means Clustering - XM](https://www.kaggle.com/competitions/k-means-clustering-xm) |
 | 12 | Gaussian Mixture Model (GMM)               | Planned | |
 | 13 | Stacking                                   | Planned | |
 | 14 | Projects                                   | Planned | One end-to-end project for each task: classification, regression, and clustering |
@@ -285,22 +285,22 @@ model = KMeans(n_clusters=3, max_iterations=100)
 labels = model.fit_predict(X)
 ```
 
-**Synthetic data** (blobs): adjusted Rand index of 1.0.
+**Synthetic data** (`make_blobs`, 100 samples, 5 features + noise): adjusted Rand index of 1.0.
 
-**Ibiy Thala Hidden Customer Groups** (customer segmentation, scored by adjusted Rand index). Silhouette tuning over `n_clusters` in {2, 4, 6, 8, 10} selects the best `n`.
+**K-Means Clustering - XM** (900 ECG-derived feature rows, scored by adjusted Rand index). Features are standardized. Silhouette tuning over `n_clusters` ∈ {2, 4, 6, 8, 10} selects **8**.
 
-| Model | Kaggle score (adjusted Rand index) |
-|-------|-------------------------------------|
-| Mine | 0.40981 |
-| scikit-learn `KMeans` | 0.40981 |
+| Model | Silhouette (train) | Kaggle score (adjusted Rand index) |
+|-------|--------------------|-------------------------------------|
+| Mine (`n_clusters=8`) | 0.2829 | **0.44258** |
+| scikit-learn `KMeans` (`n_clusters=8`) | 0.2661 | 0.42947 |
 
-Both models produce the same score on the competition.
+Mine slightly outperforms scikit-learn on the leaderboard (different random initialization). Higher is better.
 
 ## 11 - DBSCAN
 
 [`my_dbscan.py`](./11%20-%20DBSCAN/my_dbscan.py) · [`notebook.ipynb`](./11%20-%20DBSCAN/notebook.ipynb)
 
-Density-based clustering. Points with at least `min_samples` neighbors inside radius `epsilon` are core points; clusters grow by recursively expanding neighborhoods. Points that never join a dense region stay noise (`label = -1`). It provides `fit` and `fit_predict`.
+Density-based clustering. Core points have at least `min_samples` neighbors inside radius `epsilon`. Clusters expand from core points by breadth-first search over the neighborhood graph; non-core points that are reachable become border points, and everything else is noise (`label = -1`). It provides `fit` and `fit_predict`.
 
 ```python
 from my_dbscan import DBSCAN
@@ -309,20 +309,20 @@ model = DBSCAN(epsilon=0.2, min_samples=5)
 labels = model.fit_predict(X)
 ```
 
-**Synthetic data** (`make_moons`, noise=0.05): recovers the two interlocking half-circles (adjusted Rand index near 1.0 with suitable `epsilon`).
+**Synthetic data** (`make_moons`, noise=0.05): recovers the two interlocking half-circles with adjusted Rand index **1.0**.
 
-**Ibiy Thala Hidden Customer Groups** (same customer segmentation data as K-Means):
+**K-Means Clustering - XM** (same dataset as K-Means, for completeness). Grid search over `epsilon` and `min_samples` maximizes silhouette and selects `epsilon=6.5`, `min_samples=5`.
 
-| Model | Kaggle score (adjusted Rand index) |
-|-------|-------------------------------------|
-| Mine (`epsilon=0.5`, `min_samples=5`) | 0.00096 |
-| scikit-learn `DBSCAN` (`eps=0.5`, `min_samples=5`) | 0.00096 |
+| Model | Silhouette (train) | Kaggle score (adjusted Rand index) |
+|-------|--------------------|-------------------------------------|
+| Mine (`epsilon=6.5`, `min_samples=5`) | 0.6800 | 0.00041 |
+| scikit-learn `DBSCAN` (`eps=6.5`, `min_samples=5`) | 0.6800 | 0.00041 |
 
-The two implementations match. The low ARI indicates that the chosen density parameters are not well suited to this particular dataset (most points become noise or form few meaningful clusters); the exercise still validates that the from-scratch version behaves like scikit-learn.
+The two implementations match exactly. The low ARI shows that density-based clustering is a poor fit for this particular dataset (which was designed around K-Means); that is expected and does not indicate a bug.
 
 ## Model comparison
 
-All my models, ranked by Kaggle score (best first). Within each table the models use the same preprocessing and split. KNN (Iris), Naive Bayes (Disaster Tweets), K-Means, and DBSCAN (customer segmentation) use their own datasets, so they are not included in the Titanic / House Prices tables.
+All my models, ranked by Kaggle score (best first). Within each table the models use the same preprocessing and split. KNN (Iris), Naive Bayes (Disaster Tweets), K-Means, and DBSCAN (XM) use their own datasets, so they are not included in the Titanic / House Prices tables.
 
 **Titanic** (higher is better):
 
@@ -432,7 +432,9 @@ ML-from-Scratch/
     │   └── submissions/
     ├── iris/
     ├── disaster_tweets/
-    └── tabular_playground_jul_2022/
+    └── xm/
+        ├── data.csv
+        └── submissions/
 ```
 
 ## Requirements
