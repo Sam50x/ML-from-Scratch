@@ -294,7 +294,7 @@ labels = model.fit_predict(X)
 | Mine (`n_clusters=8`) | 0.2829 | **0.44258** |
 | scikit-learn `KMeans` (`n_clusters=8`) | 0.2661 | 0.42947 |
 
-Mine slightly outperforms scikit-learn on the leaderboard (different random initialization). Higher is better.
+scikit-learn isn't seeded here, so its score moves between runs (0.256–0.280 across 5 reruns I tried); mine beating it once is not a reliable difference. Higher is better.
 
 ## 11 - DBSCAN
 
@@ -318,7 +318,7 @@ labels = model.fit_predict(X)
 | Mine (`epsilon=6.5`, `min_samples=5`) | 0.6800 | 0.00041 |
 | scikit-learn `DBSCAN` (`eps=6.5`, `min_samples=5`) | 0.6800 | 0.00041 |
 
-The two implementations match exactly. The low ARI shows that density-based clustering is a poor fit for this particular dataset (which was designed around K-Means); that is expected and does not indicate a bug.
+The two implementations match exactly on this and on several synthetic checks I ran (noisy blobs at four different `epsilon`/`min_samples` settings), so the result is not a bug. It's a weakness of using silhouette score to pick `epsilon` here: raising `epsilon` keeps shrinking the noise set, which drives silhouette up right up to the point where the noise disappears and the data becomes one cluster. The grid search follows that gradient to its degenerate end rather than to the more structured split (`epsilon=2` gives 4 clusters with noise, at a much lower silhouette of 0.02).
 
 ## Model comparison
 
