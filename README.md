@@ -18,8 +18,7 @@ Core machine learning algorithms implemented from scratch with NumPy and compare
 | 10 | [K-Means](./10%20-%20KMeans)               | Done    | Synthetic data, [K-Means Clustering - XM](https://www.kaggle.com/competitions/k-means-clustering-xm) |
 | 11 | [DBSCAN](./11%20-%20DBSCAN)                | Done    | Synthetic data, [K-Means Clustering - XM](https://www.kaggle.com/competitions/k-means-clustering-xm) |
 | 12 | Gaussian Mixture Model (GMM)               | Planned | |
-| 13 | Stacking                                   | Planned | |
-| 14 | Projects                                   | Planned | One end-to-end project for each task: classification, regression, and clustering |
+| 13 | Projects                                   | Planned | One end-to-end project for each task: classification, regression, and clustering, each with its own stacked ensemble |
 
 All models share one interface: hyperparameters go in the constructor, and `fit(X, y)` / `predict(X)` (or `transform(X)` for PCA) take only the data. The unsupervised models (PCA, K-Means, and DBSCAN) call `fit(X)` without labels.
 
@@ -311,43 +310,14 @@ labels = model.fit_predict(X)
 
 **Synthetic data** (`make_moons`, noise=0.05): recovers the two interlocking half-circles with adjusted Rand index **1.0**.
 
-**K-Means Clustering - XM** (same dataset as K-Means, for completeness). Grid search over `epsilon` and `min_samples` maximizes silhouette and selects `epsilon=6.5`, `min_samples=5`.
+**K-Means Clustering - XM** (same dataset as K-Means, for completeness). `epsilon=2.0`, `min_samples=20` was found by scanning a grid of both parameters, discarding any result with one cluster or over 50% noise, and ranking what's left by Calinski-Harabasz and Davies-Bouldin.
 
 | Model | Silhouette (train) | Kaggle score (adjusted Rand index) |
 |-------|--------------------|-------------------------------------|
-| Mine (`epsilon=6.5`, `min_samples=5`) | 0.6800 | 0.00041 |
-| scikit-learn `DBSCAN` (`eps=6.5`, `min_samples=5`) | 0.6800 | 0.00041 |
+| Mine (`epsilon=2.0`, `min_samples=20`) | 0.2392 | 0.37823 |
+| scikit-learn `DBSCAN` (`eps=2.0`, `min_samples=20`) | 0.2392 | 0.37823 |
 
-The two implementations match exactly on this and on several synthetic checks I ran (noisy blobs at four different `epsilon`/`min_samples` settings), so the result is not a bug. It's a weakness of using silhouette score to pick `epsilon` here: raising `epsilon` keeps shrinking the noise set, which drives silhouette up right up to the point where the noise disappears and the data becomes one cluster. The grid search follows that gradient to its degenerate end rather than to the more structured split (`epsilon=2` gives 4 clusters with noise, at a much lower silhouette of 0.02).
-
-## Model comparison
-
-All my models, ranked by Kaggle score (best first). Within each table the models use the same preprocessing and split. KNN (Iris), Naive Bayes (Disaster Tweets), K-Means, and DBSCAN (XM) use their own datasets, so they are not included in the Titanic / House Prices tables.
-
-**Titanic** (higher is better):
-
-| Rank | Model | Validation accuracy | Kaggle score (accuracy) |
-|------|-------|---------------------|-------------------------|
-| 1 | SVM (gradient descent) | 0.7276 | 0.79186 |
-| 2 (tie) | Random Forest (`max_depth=2`) | 0.8022 | 0.78229 |
-| 2 (tie) | Gradient Boosting (`max_depth=4`) | 0.7985 | 0.78229 |
-| 4 (tie) | SVM (dual problem) | 0.7761 | 0.77511 |
-| 4 (tie) | Decision Tree (Gini, `max_depth=2`) | 0.7985 | 0.77511 |
-| 4 (tie) | Decision Tree (entropy, `max_depth=2`) | 0.8097 | 0.77511 |
-| 7 | Logistic Regression | 0.8022 | 0.76315 |
-
-**House Prices** (lower is better):
-
-| Rank | Model | Validation RMSE | Kaggle score (RMSE) |
-|------|-------|-----------------|---------------------|
-| 1 | Linear Regression + PCA (93 comps) | — | **0.15865** |
-| 2 | Linear Regression (gradient descent) | 18,412.13 | 0.16219 |
-| 3 | Linear Regression (normal equation) | 18,884.06 | 0.16664 |
-| 4 | Gradient Boosting (`max_depth=4`) | 16,303.76 | 0.19286 |
-| 5 | Random Forest (`max_depth=3`) | 19,634.59 | 0.22817 |
-| 6 | Decision Tree (`max_depth=3`) | 24,940.43 | 0.24192 |
-
-On Titanic only 12 passengers out of 418 separate first from last, so small differences are partly luck. The ensembles beat a single tree on both datasets, and linear regression (especially after PCA) wins on House Prices.
+The two implementations match exactly, here and on several synthetic checks I ran (noisy blobs at four different `epsilon`/`min_samples` settings). Silhouette score is a poor guide for picking `epsilon`: raising it keeps shrinking the noise set, which drives silhouette up right up to the point where the noise disappears and the data becomes one cluster. `epsilon=2.0`, `min_samples=20` was instead chosen with Calinski-Harabasz and Davies-Bouldin, after discarding any result with one cluster or over 50% noise.
 
 ## Running the notebooks
 
