@@ -1,10 +1,8 @@
 import numpy as np
 from scipy.optimize import minimize
 
-np.random.seed(42)
-
 class SVM:
-    def __init__(self, mode='dual_problem', C=1.0, epochs=1000, learning_rate=0.01, regularization_rate=0.01):
+    def __init__(self, mode='dual_problem', C=1.0, epochs=1000, learning_rate=0.01, regularization_rate=0.01, random_state=42):
         self.is_fitted = False
 
         if mode != 'dual_problem' and mode != 'gradient_descent':
@@ -14,12 +12,15 @@ class SVM:
         self.epochs = epochs
         self.learning_rate = learning_rate
         self.regularization_rate = regularization_rate
+        self.random_state = random_state
 
         self.mode = mode
         self.weights_ = None
         self.bias_ = None
 
     def fit(self, X, y):
+        np.random.seed(self.random_state)
+
         X = np.asarray(X, dtype=float)
         y = np.asarray(y)
 

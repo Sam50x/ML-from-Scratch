@@ -2,13 +2,14 @@ import numpy as np
 
 
 class KMeans:
-    def __init__(self, n_clusters, max_iterations=100):
+    def __init__(self, n_clusters, max_iterations=100, random_state=42):
         self.is_fitted = False
         self.n_clusters = n_clusters
         self.max_iterations = max_iterations
+        self.random_state = random_state
 
     def fit(self, X):
-        np.random.seed(42)
+        np.random.seed(self.random_state)
 
         self.centroids = self.__initiate_random_centroids(X)
 

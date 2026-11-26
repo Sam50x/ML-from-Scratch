@@ -1,16 +1,19 @@
 import numpy as np
 
 class Logistic_Regression:
-    def __init__(self, epochs=1000, learning_rate=0.1):
+    def __init__(self, epochs=1000, learning_rate=0.1, random_state=42):
         self.is_fitted = False
 
         self.epochs = epochs
         self.learning_rate = learning_rate
+        self.random_state = random_state
 
         self.bias_ = None
         self.weights_ = None
 
     def fit(self, X, y):
+        np.random.seed(self.random_state)
+
         p = X.shape[1]
 
         w = np.random.randn(p)

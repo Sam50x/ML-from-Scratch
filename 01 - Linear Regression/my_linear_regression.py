@@ -1,9 +1,7 @@
 import numpy as np
 
-np.random.seed(42)
-
 class Linear_Regression:
-    def __init__(self, mode='normal_equation', epochs=1000, learning_rate=0.01):
+    def __init__(self, mode='normal_equation', epochs=1000, learning_rate=0.01, random_state=42):
         if mode != 'normal_equation' and mode != 'gradient_descent':
             raise ValueError('Linear Regression mode can either be \'normal_equation\' or \'gradient_descent\'')
 
@@ -11,11 +9,14 @@ class Linear_Regression:
 
         self.epochs = epochs
         self.learning_rate = learning_rate
+        self.random_state = random_state
         self.mode = mode
         self.weights_ = None
         self.intercept_ = None
 
     def fit(self, X, y):
+        np.random.seed(self.random_state)
+
         if self.mode == 'normal_equation':
             self.__fit_using_normal_equation(X, y)
         elif self.mode == 'gradient_descent':
@@ -34,9 +35,9 @@ class Linear_Regression:
 
     def __fit_using_normal_equation(self, X, y):
         X_b = np.c_[np.ones(X.shape[0]), X]
-        
+
         best_theta = np.linalg.inv(X_b.T @ X_b) @ X_b.T @ y
-        
+
         self.intercept_ = best_theta[0]
         self.weights_ = best_theta[1:]
 
