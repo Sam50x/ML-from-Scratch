@@ -33,13 +33,38 @@ class GMM:
         return self.fit(X).predict(X)
 
     def __initialize_random_parameters(self, X):
-        pass
+        self.means = np.random.randn(self.n_clusters, X.shape[1])
+
+        self.covariances = np.array([np.eye(X.shape[1]) for _ in range(self.n_clusters)])
+
+        self.weights = np.array([1 / self.n_clusters] * self.n_clusters)
 
     def __expectation_step(self, X):
-        pass
+        probas = np.array([])
+
+        for i in range(self.n_clusters):
+            proba = self.__gaussian_pdf(X, i)
+            probas = self.weights[i] * np.append(probas, proba)
+
+        probas = probas.reshape(self.n_clusters, X.shape[0]).T
+
+        self.gammas = probas / np.sum(probas, axis=1, keepdims=True)
+
+        self.N_k = np.sum(self.gammas, axis=0)
 
     def __maximization_step(self, X):
         pass
 
-    def __gaussian_pdf(self, X):
-        pass
+    def __gaussian_pdf(self, X, n_cluster):
+        d = X.shape[1]
+
+        det = np.linalg.det(self.covariances[n_cluster])
+        inv = np.linalg.inv(self.covariances[n_cluster])
+
+        diff = X - self.means[n_cluster]
+
+        denominator = np.sqrt((2 * np.pi) ** d * det)
+
+        exponent = np.exp(-0.5 * np.sum(diff @ inv * diff, axis=1))
+
+        return exponent / denominator
