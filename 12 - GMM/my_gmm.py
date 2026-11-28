@@ -27,7 +27,19 @@ class GMM:
 
         X = np.asarray(X)
 
+        self.__expectation_step(X)
 
+        return np.argmax(self.gammas, axis=1)
+
+    def predict_proba(self, X):
+        if not self.is_fitted:
+            raise ValueError('Model is not fitted')
+
+        X = np.asarray(X)
+
+        self.__expectation_step(X)
+
+        return self.gammas
 
     def fit_predict(self, X):
         return self.fit(X).predict(X)
@@ -43,8 +55,8 @@ class GMM:
         probas = np.array([])
 
         for i in range(self.n_clusters):
-            proba = self.__gaussian_pdf(X, i)
-            probas = self.weights[i] * np.append(probas, proba)
+            proba = self.weights[i] * self.__gaussian_pdf(X, i)
+            probas = np.append(probas, proba)
 
         probas = probas.reshape(self.n_clusters, X.shape[0]).T
 
@@ -53,7 +65,15 @@ class GMM:
         self.N_k = np.sum(self.gammas, axis=0)
 
     def __maximization_step(self, X):
-        pass
+        self.weights = self.N_k / X.shape[0]
+
+        self.means = (self.gammas.T @ X) / self.N_k[:, None]
+
+        for i in range(self.n_clusters):
+            diff = X - self.means[i]
+            self.covariances[i] = (diff.T * self.gammas[:, i]) @ diff
+            self.covariances[i] /= self.N_k[i]
+            self.covariances += 1e-6 * np.eye(X.shape[1])
 
     def __gaussian_pdf(self, X, n_cluster):
         d = X.shape[1]
