@@ -73,7 +73,7 @@ class GMM:
             diff = X - self.means[i]
             self.covariances[i] = (diff.T * self.gammas[:, i]) @ diff
             self.covariances[i] /= self.N_k[i]
-            self.covariances += 1e-6 * np.eye(X.shape[1])
+            self.covariances[i] += 1e-6 * np.eye(X.shape[1])
 
     def __gaussian_pdf(self, X, n_cluster):
         d = X.shape[1]

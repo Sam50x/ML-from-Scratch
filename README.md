@@ -17,7 +17,7 @@ Core machine learning algorithms implemented from scratch with NumPy and compare
 | 09 | [Principal Component Analysis (PCA)](./09%20-%20PCA) | Done    | Synthetic data, [House Prices](https://www.kaggle.com/competitions/house-prices-advanced-regression-techniques/) + [Titanic](https://www.kaggle.com/competitions/titanic) (as preprocessing) |
 | 10 | [K-Means](./10%20-%20KMeans)               | Done    | Synthetic data, [K-Means Clustering - XM](https://www.kaggle.com/competitions/k-means-clustering-xm) |
 | 11 | [DBSCAN](./11%20-%20DBSCAN)                | Done    | Synthetic data, [K-Means Clustering - XM](https://www.kaggle.com/competitions/k-means-clustering-xm) |
-| 12 | Gaussian Mixture Model (GMM)               | Planned | |
+| 12 | [Gaussian Mixture Model (GMM)](./12%20-%20GMM) | Done    | Synthetic data, [K-Means Clustering - XM](https://www.kaggle.com/competitions/k-means-clustering-xm) |
 | 13 | Projects                                   | Planned | One end-to-end project for each task: classification, regression, and clustering, each with its own stacked ensemble |
 
 All models share one interface: hyperparameters go in the constructor, and `fit(X, y)` / `predict(X)` (or `transform(X)` for PCA) take only the data. The unsupervised models (PCA, K-Means, and DBSCAN) call `fit(X)` without labels.
@@ -45,12 +45,12 @@ model.fit(X_train, y_train)
 y_pred = model.predict(X_val)
 ```
 
-Synthetic data (10 samples): MSE 0.3750 with the normal equation and 0.3754 with gradient descent. House Prices:
+Synthetic data (10 samples): MSE 0.3750 with the normal equation and 0.3759 with gradient descent. House Prices:
 
 | Model | Validation RMSE | Kaggle score (RMSE) |
 |-------|-----------------|---------------------|
 | Mine (Normal Equation) | 18,884.06 | 0.16664 |
-| Mine (Gradient Descent) | 18,412.13 | 0.16219 |
+| Mine (Gradient Descent) | 18,412.12 | 0.16219 |
 | scikit-learn `LinearRegression` | 18,884.06 | 0.16664 |
 
 ## 02 - Logistic Regression
@@ -71,10 +71,10 @@ Synthetic data (100 samples): 0.96 accuracy on the training data. Titanic, again
 
 | Model | Validation accuracy | Kaggle score (accuracy) |
 |-------|---------------------|-------------------------|
-| Mine | 0.8022 | 0.76315 |
+| Mine | 0.8097 | 0.76555 |
 | scikit-learn `LogisticRegression` | 0.8022 | 0.76315 |
 
-The two models disagree on 16 of the 418 test passengers, and the differences cancel out in the score.
+Mine now edges out scikit-learn on both the validation set and Kaggle; the two disagree on 13 of the 418 test passengers.
 
 ## 03 - K-Nearest Neighbors (KNN)
 
@@ -136,15 +136,15 @@ model.fit(X_train, y_train)
 y_pred = model.predict(X_val)
 ```
 
-Synthetic data: 0.92 accuracy with the dual problem and 0.90 with gradient descent (training data). Titanic:
+Synthetic data: 0.92 accuracy with the dual problem and 0.95 with gradient descent (training data). Titanic:
 
 | Model | Validation accuracy | Kaggle score (accuracy) |
 |-------|---------------------|-------------------------|
 | Mine (Dual Problem) | 0.7761 | 0.77511 |
-| Mine (Gradient Descent) | 0.7276 | 0.79186 |
+| Mine (Gradient Descent) | 0.7276 | 0.74641 |
 | scikit-learn `SVC` (linear) | 0.7761 | 0.77511 |
 
-The dual version matches scikit-learn exactly, with identical predictions for all 418 test passengers. Gradient descent only approximates the solution and differs on about 9% of them, and its higher Kaggle score is a handful of passengers.
+The dual version matches scikit-learn exactly, with identical predictions for all 418 test passengers. Gradient descent only approximates the solution and now differs on about 26% of them, with a lower Kaggle score than the dual version.
 
 ## 06 - Decision Tree
 
@@ -319,6 +319,30 @@ labels = model.fit_predict(X)
 
 The two implementations match exactly, here and on several synthetic checks I ran (noisy blobs at four different `epsilon`/`min_samples` settings). Silhouette score is a poor guide for picking `epsilon`: raising it keeps shrinking the noise set, which drives silhouette up right up to the point where the noise disappears and the data becomes one cluster. `epsilon=2.0`, `min_samples=20` was instead chosen with Calinski-Harabasz and Davies-Bouldin, after discarding any result with one cluster or over 50% noise.
 
+## 12 - GMM
+
+[`my_gmm.py`](./12%20-%20GMM/my_gmm.py) · [`notebook.ipynb`](./12%20-%20GMM/notebook.ipynb)
+
+Soft clustering with expectation-maximization: each of the `n_clusters` Gaussians starts with a random mean, identity covariance, and equal weight. The E-step computes each point's responsibility (`gammas`) for each Gaussian, and the M-step updates each Gaussian's weight, mean, and covariance from those responsibilities, repeating for `max_iterations` (default 100). `predict` returns the most likely cluster, and `predict_proba` returns the responsibilities themselves.
+
+```python
+from my_gmm import GMM
+
+model = GMM(n_clusters=4, max_iterations=100)
+labels = model.fit_predict(X)
+```
+
+**Synthetic data** (100 samples, 5 features, 3 blobs plus noise): adjusted Rand index of 0.9697.
+
+**K-Means Clustering - XM** (same dataset as K-Means and DBSCAN), `n_clusters=4`:
+
+| Model | Silhouette (train) | Kaggle score (adjusted Rand index) |
+|-------|--------------------|-------------------------------------|
+| Mine | 0.17856 | 0.56079 |
+| scikit-learn `GaussianMixture` (random init, matched) | 0.10932 | 0.27206 |
+
+Both are given the same random initialization style (`init_params='random'` on the scikit-learn side) rather than scikit-learn's usual k-means-seeded start, so this is a fair comparison of the EM updates themselves, and mine comes out ahead on both metrics. With that initialization, neither implementation reliably finds the true clusters on arbitrary data: across 20 synthetic datasets, mine recovered the true clusters 8 times and scikit-learn 9, so a few reruns with different `random_state` values are worth trying before trusting a single fit.
+
 ## Running the notebooks
 
 Each notebook reads data from `../data` (now preferring the `preprocessed/` subfolder) and imports models by path, so run it from its own folder inside a full clone of the repo. On Colab, run this first (change the folder name to match):
@@ -346,6 +370,7 @@ Colab may need `!pip install -U numpy` and a runtime restart, because the code n
 | PCA | [`09 - PCA/notebook.ipynb`](./09%20-%20PCA/notebook.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Sam50x/ML-from-Scratch/blob/main/09%20-%20PCA/notebook.ipynb) |
 | K-Means | [`10 - KMeans/notebook.ipynb`](./10%20-%20KMeans/notebook.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Sam50x/ML-from-Scratch/blob/main/10%20-%20KMeans/notebook.ipynb) |
 | DBSCAN | [`11 - DBSCAN/notebook.ipynb`](./11%20-%20DBSCAN/notebook.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Sam50x/ML-from-Scratch/blob/main/11%20-%20DBSCAN/notebook.ipynb) |
+| GMM | [`12 - GMM/notebook.ipynb`](./12%20-%20GMM/notebook.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Sam50x/ML-from-Scratch/blob/main/12%20-%20GMM/notebook.ipynb) |
 
 ## Repo structure
 
@@ -392,6 +417,9 @@ ML-from-Scratch/
 │   └── notebook.ipynb
 ├── 11 - DBSCAN/
 │   ├── my_dbscan.py
+│   └── notebook.ipynb
+├── 12 - GMM/
+│   ├── my_gmm.py
 │   └── notebook.ipynb
 └── data/
     ├── house_prices/
